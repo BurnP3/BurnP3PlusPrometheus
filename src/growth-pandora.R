@@ -26,7 +26,7 @@ checkPackageVersion <- function(packageString, minimumVersion){
   }
 }
 
-checkPackageVersion("rsyncrosim", "1.5.0")
+checkPackageVersion("rsyncrosim", "2.0.0")
 checkPackageVersion("tidyverse",  "2.0.0")
 checkPackageVersion("terra",      "1.5.21")
 checkPackageVersion("dplyr",      "1.1.2")
@@ -51,6 +51,11 @@ if (prometheusLocation == "") {
 
 prometheusVersion <- str_c('powershell "(Get-Item -path ', prometheusLocation, ').VersionInfo.ProductVersion"') %>%
   shell(intern = T)
+
+if (length(prometheusVersion) > 1) {
+  stop(paste("Problem loading Prometheus from PowerShell:", prometheusVersion, sep = "\n"))
+}
+
 if (prometheusVersion != "6,2021,12,03") {
   stop("Could not find the correct version of Prometheus. Please ensure that you have installed Prometheus v2021.12.03.")
 }
@@ -62,8 +67,7 @@ prometheus_proj_lib <- prometheusLocation %>% dirname %>% file.path("proj_nad/")
 updateRunLog(paste0("Environment variables:",
                     "\r\nPROJ_LIB: ", Sys.getenv("PROJ_LIB"),
                     "\r\nGDAL_DATA: ", Sys.getenv("GDAL_DATA"),
-                    "\r\nprometheus_proj_lib: ", prometheus_proj_lib),
-             type = "info")
+                    "\r\nprometheus_proj_lib: ", prometheus_proj_lib))
 
 ## Connect to SyncroSim ----
 
@@ -74,6 +78,7 @@ RunControl <- datasheet(myScenario, "burnP3Plus_RunControl", returnInvisible = T
 iterations <- seq(RunControl$MinimumIteration, RunControl$MaximumIteration)
 
 # Load remaining datasheets
+Multithreading <- datasheet(myScenario, "burnP3PlusPrometheus_PrometheusMultithreading")
 BatchOption <- datasheet(myScenario, "burnP3Plus_BatchOption")
 ResampleOption <- datasheet(myScenario, "burnP3Plus_FireResampleOption")
 DeterministicIgnitionLocation <- datasheet(myScenario, "burnP3Plus_DeterministicIgnitionLocation", lookupsAsFactors = F, optional = T, returnInvisible = T) %>% unique()
@@ -218,6 +223,8 @@ parameterFilePlaceHolders <- list(
 
 ## Extract relevant parameters ----
 
+numThreads <- Multithreading$ThreadsPerIteration
+
 # Batch size for batched runs
 batchSize <- BatchOption$BatchSize
 
@@ -235,7 +242,7 @@ getRunContext <- function() {
   isParallel <- libraryPath %>%
     str_split("/|(\\\\)") %>%
     pluck(1) %>%
-    str_detect("Parallel") %>%
+    str_detect("MultiProc") %>%
     any %>%
     `&`(str_detect(libraryName, "Job-\\d"))
 
@@ -293,7 +300,7 @@ if (nrow(FuelTypeCrosswalk) > 0) {
 }
 
 # Decide whether or not to manually set grass fuel loading
-useWindGrid <- nrow(WindGrid) > 0
+useWindGrid <- !all(is.na(WindGrid))
 
 # Decide whether or not to manually set grass fuel loading and curing
 setFuelLoad <- nrow(FuelLoad) > 0
@@ -490,7 +497,7 @@ runPandora <- function() {
   ssimEnvironment()$PackageDirectory %>%
     str_replace_all("\\\\", "/") %>%
     str_c("/pandora.exe /silent /nowin ", parameterFile) %>%
-    shell()
+    shell(mustWork = TRUE, intern = TRUE)
 
   # Reset proj lib variable for terra
   Sys.unsetenv("PROJ_LIB")
@@ -618,7 +625,7 @@ generateParamaterTemplate <- function(placeHolderNames){
     str_c("Wx_file ", placeHolderNames$weatherFile),
     str_c("Init_hour 13"),
     str_c("FFMC_Method 5"),
-    str_c("Threads 1"),
+    str_c("Threads ", numThreads),
     if (useWindGrid) {
       WindGridParameterStrings
     } else {
@@ -832,7 +839,7 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
       # Mask and save as raster
       rast(fuelsRaster, vals = seasonalAccumulators[[season]]) %>%
         mask(fuelsRaster) %>%
-        writeRaster(str_c(seasonalAccumulatorOutputFolder, "/it", Iteration, "-sn", lookup(season, SeasonTable$Name, SeasonTable$SeasonID), ".tif"), 
+        writeRaster(str_c(seasonalAccumulatorOutputFolder, "/it", Iteration, "-sn", lookup(season, SeasonTable$Name, SeasonTable$SeasonId), ".tif"), 
                     overwrite = T,
                     NAflag = -9999,
                     wopt = list(filetype = "GTiff",
@@ -1105,7 +1112,7 @@ if (saveBurnMaps) {
           Timestep = 0,
           Season = str_extract(FileName, "\\d+.tif") %>% str_sub(end = -5) %>% as.integer()) %>%
         mutate(
-          Season = lookup(Season, SeasonTable$SeasonID, SeasonTable$Name)) %>%
+          Season = lookup(Season, SeasonTable$SeasonId, SeasonTable$Name)) %>%
         filter(Iteration %in% iterations)) %>%
       as.data.frame
   }
