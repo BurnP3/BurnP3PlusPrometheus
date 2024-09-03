@@ -1,7 +1,6 @@
 # Clean global environment variables
 native_proj_lib <- Sys.getenv("PROJ_LIB")
 Sys.unsetenv("PROJ_LIB")
-options(scipen = 999)
 
 # Check and load packages ----
 library(rsyncrosim)
@@ -51,11 +50,6 @@ if (prometheusLocation == "") {
 
 prometheusVersion <- str_c('powershell "(Get-Item -path ', prometheusLocation, ').VersionInfo.ProductVersion"') %>%
   shell(intern = T)
-
-if (length(prometheusVersion) > 1) {
-  stop(paste("Problem loading Prometheus from PowerShell:", prometheusVersion, sep = "\n"))
-}
-
 if (prometheusVersion != "6,2021,12,03") {
   stop("Could not find the correct version of Prometheus. Please ensure that you have installed Prometheus v2021.12.03.")
 }
@@ -67,7 +61,8 @@ prometheus_proj_lib <- prometheusLocation %>% dirname %>% file.path("proj_nad/")
 updateRunLog(paste0("Environment variables:",
                     "\r\nPROJ_LIB: ", Sys.getenv("PROJ_LIB"),
                     "\r\nGDAL_DATA: ", Sys.getenv("GDAL_DATA"),
-                    "\r\nprometheus_proj_lib: ", prometheus_proj_lib))
+                    "\r\nprometheus_proj_lib: ", prometheus_proj_lib),
+             type = "info")
 
 ## Connect to SyncroSim ----
 
@@ -223,6 +218,7 @@ parameterFilePlaceHolders <- list(
 
 ## Extract relevant parameters ----
 
+# Check if multithreading enabled
 numThreads <- Multithreading$ThreadsPerIteration
 
 # Batch size for batched runs
@@ -265,7 +261,10 @@ runContext <- getRunContext()
 
 # Determine which subset of the extra iterations this job is responsible for
 if(runContext$numJobs > 1 & length(extraIgnitionIDs) > 0)
-  extraIgnitionIDs <- split(extraIgnitionIDs, cut(seq_along(extraIgnitionIDs), runContext$numJobs, labels = F)) %>% pluck(as.character(runContext$jobIndex))
+  extraIgnitionIDs <- split(extraIgnitionIDs, 
+                            cut(seq_along(extraIgnitionIDs), 
+                                runContext$numJobs, labels = F)) %>% 
+  pluck(as.character(runContext$jobIndex))
 
 # Filter deterministic tables accordingly
 
@@ -497,7 +496,7 @@ runPandora <- function() {
   ssimEnvironment()$PackageDirectory %>%
     str_replace_all("\\\\", "/") %>%
     str_c("/pandora.exe /silent /nowin ", parameterFile) %>%
-    shell(mustWork = TRUE, intern = TRUE)
+    shell()
 
   # Reset proj lib variable for terra
   Sys.unsetenv("PROJ_LIB")
@@ -520,6 +519,11 @@ runBatch <- function(batchInputs) {
   fileTags <- batchInputs %>%
     dplyr::rename(season = Season) %>% # used to avoid a name conflict with the Season datasheet
     pmap_chr(generateParameterFile, placeHolderNames = parameterFilePlaceHolders)
+
+  firstline <- "Landscape_Constant 1"
+  content <- readLines(parameterFile)
+  newContent <- c(firstline, content)
+  writeLines(newContent, parameterFile)
 
   # Run Pandora on the batch
   runPandora()
