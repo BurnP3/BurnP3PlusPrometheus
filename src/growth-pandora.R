@@ -514,6 +514,11 @@ runBatch <- function(batchInputs) {
     dplyr::rename(season = Season) %>% # used to avoid a name conflict with the Season datasheet
     pmap_chr(generateParameterFile, placeHolderNames = parameterFilePlaceHolders)
 
+  firstline <- "Landscape_Constant 1"
+  content <- readLines(parameterFile)
+  newContent <- c(firstline, content)
+  writeLines(newContent, parameterFile)
+
   # Run Pandora on the batch
   runPandora()
 
