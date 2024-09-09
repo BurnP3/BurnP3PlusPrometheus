@@ -294,8 +294,6 @@
 	<!--Scenario Layout-->
 	<layout type="Scenario">
 		<item name="OutputOptionSpatial" displayName="Prometheus" showIf="inPipeline"/>
-		<item name="PrometheusMultithreading"/>
-
 	</layout>
 
 </package>
