@@ -62,7 +62,7 @@ updateRunLog(paste0("Environment variables:",
                     "\r\nPROJ_LIB: ", Sys.getenv("PROJ_LIB"),
                     "\r\nGDAL_DATA: ", Sys.getenv("GDAL_DATA"),
                     "\r\nprometheus_proj_lib: ", prometheus_proj_lib),
-             type = "info")
+             type = "status")
 
 ## Connect to SyncroSim ----
 
