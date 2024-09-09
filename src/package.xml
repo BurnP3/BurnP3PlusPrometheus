@@ -3,13 +3,6 @@
 
 	<builtFor package = "burnP3Plus" version = "2.0.0"/>
 
-	<!--Library Datasheets-->
-
-	<dataSheet name="PrometheusMultithreading" displayName="Prometheus Multithreading" isSingleRow="True">
-		<column name="ThreadsPerIteration" displayName="Threads Per Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="1"/>
-		<record columns="ThreadsPerIteration" values="1"/>
-	</dataSheet>
-
 	<!--Project Datasheets-->
 
 	<dataSheet name="FuelCode" displayName="Prometheus Fuel Code List" displayMember="FuelCode" dataScope="Project">
