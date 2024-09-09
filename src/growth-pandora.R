@@ -73,7 +73,6 @@ RunControl <- datasheet(myScenario, "burnP3Plus_RunControl", returnInvisible = T
 iterations <- seq(RunControl$MinimumIteration, RunControl$MaximumIteration)
 
 # Load remaining datasheets
-# Multithreading <- datasheet(myScenario, "burnP3PlusPrometheus_PrometheusMultithreading")
 BatchOption <- datasheet(myScenario, "burnP3Plus_BatchOption")
 ResampleOption <- datasheet(myScenario, "burnP3Plus_FireResampleOption")
 DeterministicIgnitionLocation <- datasheet(myScenario, "burnP3Plus_DeterministicIgnitionLocation", lookupsAsFactors = F, optional = T, returnInvisible = T) %>% unique()
@@ -219,7 +218,6 @@ parameterFilePlaceHolders <- list(
 ## Extract relevant parameters ----
 
 # Check if multithreading enabled
-# numThreads <- Multithreading$ThreadsPerIteration
 numThreads <- 1
 
 
