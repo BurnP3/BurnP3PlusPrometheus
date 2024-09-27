@@ -6,7 +6,7 @@ Sys.unsetenv("PROJ_LIB")
 library(rsyncrosim)
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(lubridate))
-suppressPackageStartupMessages(library(terra))
+suppressPackageStartupMessages(library(sf))
 suppressPackageStartupMessages(library(data.table))
 
 checkPackageVersion <- function(packageString, minimumVersion){
@@ -27,7 +27,6 @@ checkPackageVersion <- function(packageString, minimumVersion){
 
 checkPackageVersion("rsyncrosim", "2.0.0")
 checkPackageVersion("tidyverse",  "2.0.0")
-checkPackageVersion("terra",      "1.5.21")
 checkPackageVersion("dplyr",      "1.1.2")
 checkPackageVersion("codetools",  "0.2.19")
 checkPackageVersion("data.table", "1.14.8")
@@ -394,28 +393,6 @@ resetFolder <- function(path) {
   list.files(path, full.names = T) %>%
     unlink(recursive = T, force = T)
   invisible()
-}
-
-# Function to convert a raster and row and column indices to Lat Long
-latlonFromRowCol <- function(x, row, col) {
-  cellFromRowCol(x, row, col) %>%
-    {
-      as.points(x, na.rm = F)[.]
-    } %>%
-    project("EPSG:4326") %>%
-    crds() %>%
-    return()
-}
-
-# Function to convert from latlong to cell index
-cellFromLatLong <- function(x, lat, long) {
-  # Convert list of lat and long to SpatVector, reproject to source crs
-  points <- matrix(c(long, lat), ncol = 2) %>%
-    vect(crs = "EPSG:4326") %>%
-    project(x)
-
-  # Get vector of cell ID's from points
-  return(cells(x, points)[, "cell"])
 }
 
 # Get burn area from output asc
@@ -875,7 +852,17 @@ FuelType %>%
   write_csv(fuelLookup, escape = "none")
 
 # Setup dummy location for weather station in the middle of the extent
-weatherStationLocation <- latlonFromRowCol(fuelsRaster, floor(nrow(fuelsRaster) / 2), floor(ncol(fuelsRaster) / 2))
+weatherStationLocation <- st_coordinates(
+                              st_transform(
+                                st_as_sf(
+                                  data.frame(
+                                    xyFromCell(fuelsRaster,
+                                               cellFromRowCol(fuelsRaster,
+                                                              floor(nrow(fuelsRaster) / 2),
+                                                              floor(ncol(fuelsRaster) / 2)))),
+                                  coords=c("x","y"),
+                                  crs=crs(fuelsRaster)),
+                                "EPSG:4326"))
 weatherStationElevation <- ifelse(!is.null(elevationRaster), elevationRaster[floor(nrow(elevationRaster) / 2), floor(ncol(elevationRaster) / 2)], 0)
 
 # Convert ignition location to lat/long
@@ -1044,10 +1031,14 @@ if (OutputOptions$FireStatistics | minimumFireSize > 0) {
     
     # Determine Fire and Weather Zones if the rasters are present, as well as 
     # fuel type of ignition location
-  OutputFireStatistic$cell <- cellFromLatLong(
-      fuelsRaster, 
-      OutputFireStatistic$Latitude, 
-      OutputFireStatistic$Longitude)
+  OutputFireStatistic$cell <- cellFromXY(
+    fuelsRaster,
+    xy = data.frame(long=OutputFireStatistic$Longitude,
+                    lat=OutputFireStatistic$Latitude) %>%
+        st_as_sf(crs = "EPSG:4326",
+                coords = c("long","lat")) %>%
+        st_transform(crs = crs(fuelsRaster)) %>%
+        st_coordinates)
   
   if (!is.null(weatherZoneRaster)){
     OutputFireStatistic <- OutputFireStatistic %>%
