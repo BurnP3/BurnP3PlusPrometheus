@@ -302,7 +302,7 @@
 				<datafeed name="burnP3Plus_WindGrid" type="Input"/>
 				<datafeed name="burnP3Plus_GreenUp" type="Input"/>
 				<datafeed name="burnP3Plus_Curing" type="Input"/>
-				<datafeed name="burnP3Plus_FuelLoad" type="Input"/>
+				<!-- <datafeed name="burnP3Plus_FuelLoad" type="Input"/> -->
 				<datafeed name="burnP3Plus_OutputFireStatistic" type="Output"/>
 				<datafeed name="burnP3Plus_OutputBurnMap" type="Output"/>
 				<datafeed name="burnP3Plus_OutputFirePerimeter" type="Output"/>
