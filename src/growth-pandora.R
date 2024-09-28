@@ -295,7 +295,7 @@ if (nrow(FuelTypeCrosswalk) > 0) {
 useWindGrid <- nrow(WindGrid) > 0
 
 # Decide whether or not to manually set grass fuel loading and curing
-setFuelLoad <- nrow(FuelLoad) > 0
+setFuelLoad <- FALSE #nrow(FuelLoad) > 0 # TODO: Notify user that fuel loading is not used
 setGrassCuring <- nrow(Curing) > 0
 
 ## Error check fuels ----
@@ -608,7 +608,7 @@ generateParamaterTemplate <- function(placeHolderNames){
     },
     str_c("Greenup ", placeHolderNames$greenup),
     if (setGrassCuring) {
-      str_c("%Curing_GridFile ", placeHolderNames$grassCuring)
+      str_c("Grass_Curing ", placeHolderNames$grassCuring) # TODO: Set curing for values other than just 31, 32. Code for that:, " ", str_c(FuelType %>% filter(str_detect(Code, "O-1")) %>% pull(ID), collapse = " "))
     } else {
       NA
     },
@@ -656,7 +656,7 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
     grassCuringValue <- Curing %>%
       filter(Season %in% c(season, NA)) %>%
       arrange(Season) %>%
-      pull(FileName) %>%
+      pull(Curing) %>%
       pluck(1)
   } else {
      grassCuringValue <- NA
@@ -919,30 +919,6 @@ if (setFuelLoad) {
     rast(fuelsRaster, vals = FuelLoad$FuelLoad[i]) %>%
       mask(fuelsRaster, inverse = T, maskvalues = maskValues) %>%
       writeRaster(FuelLoad$FileName[i],
-        overwrite = T,
-        NAflag = -9999,
-        wopt = list(
-          filetype = "GTiff",
-          datatype = "FLT4S",
-          gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
-        )
-      )
-  }
-}
-
-# Generate grass curing maps if used
-# - It seems that pandora can only set fuel loading using geotiffs, so these must be created based on the season-specific fuel loading value chosen by the user
-# - tempfile is used to catch season names that are not acceptable as filenames
-if (setGrassCuring) {
-  Curing <- Curing %>%
-    mutate(
-      FileName = map_chr(Season, ~ tempfile(pattern = "Curing-", tmpdir = tempDir, fileext = ".tif")),
-      FileName = str_replace_all(FileName, "\\\\", "/")
-    )
-
-  for (i in seq(nrow(Curing))) {
-    rast(fuelsRaster, vals = Curing$Curing[i]) %>%
-      writeRaster(Curing$FileName[i],
         overwrite = T,
         NAflag = -9999,
         wopt = list(
