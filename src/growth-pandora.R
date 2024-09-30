@@ -473,7 +473,7 @@ runPandora <- function() {
 
   ssimEnvironment()$PackageDirectory %>%
     str_replace_all("\\\\", "/") %>%
-    str_c("/pandora.exe /silent /nowin ", parameterFile) %>%
+    str_c("'/pandora.exe' /silent /nowin ", parameterFile) %>%
     shell()
 
   # Reset proj lib variable for terra
