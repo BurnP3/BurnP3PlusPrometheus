@@ -1,363 +1,299 @@
 <?xml version="1.0" encoding="utf-8"?>
-<package name="burnP3PlusPrometheus" displayName="Prometheus fire growth model add-on package for BurnP3+" isAddOn="True" extendsPackage="burnP3Plus" version="1.1.5" url="https://github.com/burnp3/burnp3plusprometheus">
-	<transformers>
-		<transformer name="fireGrowthPrometheus" isPrimary="True" displayName="3 - Grow Fires with Prometheus" isRunnable="True" programName="Rscript" runContext="AllowRemote" className="SyncroSim.StochasticTime.StochasticTimeTransformer" classAssembly="SyncroSim.StochasticTime" programArguments="growth-pandora.R" configurationSheet="burnP3Plus_RunControl" condaEnv="burnP3Plus.yml">
-			<datafeeds>
-				<datafeed name="FuelCode" displayName="Prometheus Fuel Code List" dataScope="Project">
-					<datasheets>
-						<datasheet name="FuelCode" displayName="Prometheus Fuel Code List" valueMember="FuelCodeID" displayMember="FuelCode">
-							<columns>
-								<column name="FuelCodeID" dataType="Integer" isPrimary="True"/>
-								<column name="ProjectID" dataType="Integer" isCompositeIndex="True"/>
-								<column name="FuelCode" displayName="Fuel Code" dataType="String"/>
-							</columns>
-							<defaultRecords>
-								<record columns="FuelCode" values="Non-fuel"/>
-								<record columns="FuelCode" values="C-1"/>
-								<record columns="FuelCode" values="C-2"/>
-								<record columns="FuelCode" values="C-3"/>
-								<record columns="FuelCode" values="C-4"/>
-								<record columns="FuelCode" values="C-5"/>
-								<record columns="FuelCode" values="C-6"/>
-								<record columns="FuelCode" values="C-7"/>
-								<record columns="FuelCode" values="D-1"/>
-								<record columns="FuelCode" values="D-1/D-2"/>
-								<record columns="FuelCode" values="D-2"/>
-								<record columns="FuelCode" values="M-1"/>
-								<record columns="FuelCode" values="M-1 (05 PC)"/>
-								<record columns="FuelCode" values="M-1 (10 PC)"/>
-								<record columns="FuelCode" values="M-1 (15 PC)"/>
-								<record columns="FuelCode" values="M-1 (20 PC)"/>
-								<record columns="FuelCode" values="M-1 (25 PC)"/>
-								<record columns="FuelCode" values="M-1 (30 PC)"/>
-								<record columns="FuelCode" values="M-1 (35 PC)"/>
-								<record columns="FuelCode" values="M-1 (40 PC)"/>
-								<record columns="FuelCode" values="M-1 (45 PC)"/>
-								<record columns="FuelCode" values="M-1 (50 PC)"/>
-								<record columns="FuelCode" values="M-1 (55 PC)"/>
-								<record columns="FuelCode" values="M-1 (60 PC)"/>
-								<record columns="FuelCode" values="M-1 (65 PC)"/>
-								<record columns="FuelCode" values="M-1 (70 PC)"/>
-								<record columns="FuelCode" values="M-1 (75 PC)"/>
-								<record columns="FuelCode" values="M-1 (80 PC)"/>
-								<record columns="FuelCode" values="M-1 (85 PC)"/>
-								<record columns="FuelCode" values="M-1 (90 PC)"/>
-								<record columns="FuelCode" values="M-1 (95 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2"/>
-								<record columns="FuelCode" values="M-1/M-2 (05 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (10 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (15 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (20 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (25 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (30 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (35 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (40 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (45 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (50 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (55 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (60 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (65 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (70 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (75 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (80 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (85 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (90 PC)"/>
-								<record columns="FuelCode" values="M-1/M-2 (95 PC)"/>
-								<record columns="FuelCode" values="M-2"/>
-								<record columns="FuelCode" values="M-2 (05 PC)"/>
-								<record columns="FuelCode" values="M-2 (10 PC)"/>
-								<record columns="FuelCode" values="M-2 (15 PC)"/>
-								<record columns="FuelCode" values="M-2 (20 PC)"/>
-								<record columns="FuelCode" values="M-2 (25 PC)"/>
-								<record columns="FuelCode" values="M-2 (30 PC)"/>
-								<record columns="FuelCode" values="M-2 (35 PC)"/>
-								<record columns="FuelCode" values="M-2 (40 PC)"/>
-								<record columns="FuelCode" values="M-2 (45 PC)"/>
-								<record columns="FuelCode" values="M-2 (50 PC)"/>
-								<record columns="FuelCode" values="M-2 (55 PC)"/>
-								<record columns="FuelCode" values="M-2 (60 PC)"/>
-								<record columns="FuelCode" values="M-2 (65 PC)"/>
-								<record columns="FuelCode" values="M-2 (70 PC)"/>
-								<record columns="FuelCode" values="M-2 (75 PC)"/>
-								<record columns="FuelCode" values="M-2 (80 PC)"/>
-								<record columns="FuelCode" values="M-2 (85 PC)"/>
-								<record columns="FuelCode" values="M-2 (90 PC)"/>
-								<record columns="FuelCode" values="M-2 (95 PC)"/>
-								<record columns="FuelCode" values="M-3"/>
-								<record columns="FuelCode" values="M-3 (05 PDF)"/>
-								<record columns="FuelCode" values="M-3 (10 PDF)"/>
-								<record columns="FuelCode" values="M-3 (15 PDF)"/>
-								<record columns="FuelCode" values="M-3 (20 PDF)"/>
-								<record columns="FuelCode" values="M-3 (25 PDF)"/>
-								<record columns="FuelCode" values="M-3 (30 PDF)"/>
-								<record columns="FuelCode" values="M-3 (35 PDF)"/>
-								<record columns="FuelCode" values="M-3 (40 PDF)"/>
-								<record columns="FuelCode" values="M-3 (45 PDF)"/>
-								<record columns="FuelCode" values="M-3 (50 PDF)"/>
-								<record columns="FuelCode" values="M-3 (55 PDF)"/>
-								<record columns="FuelCode" values="M-3 (60 PDF)"/>
-								<record columns="FuelCode" values="M-3 (65 PDF)"/>
-								<record columns="FuelCode" values="M-3 (70 PDF)"/>
-								<record columns="FuelCode" values="M-3 (75 PDF)"/>
-								<record columns="FuelCode" values="M-3 (80 PDF)"/>
-								<record columns="FuelCode" values="M-3 (85 PDF)"/>
-								<record columns="FuelCode" values="M-3 (90 PDF)"/>
-								<record columns="FuelCode" values="M-3 (95 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4"/>
-								<record columns="FuelCode" values="M-3/M-4 (05 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (10 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (15 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (20 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (25 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (30 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (35 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (40 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (45 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (50 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (55 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (60 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (65 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (70 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (75 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (80 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (85 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (90 PDF)"/>
-								<record columns="FuelCode" values="M-3/M-4 (95 PDF)"/>
-								<record columns="FuelCode" values="M-4"/>
-								<record columns="FuelCode" values="M-4 (05 PDF)"/>
-								<record columns="FuelCode" values="M-4 (10 PDF)"/>
-								<record columns="FuelCode" values="M-4 (15 PDF)"/>
-								<record columns="FuelCode" values="M-4 (20 PDF)"/>
-								<record columns="FuelCode" values="M-4 (25 PDF)"/>
-								<record columns="FuelCode" values="M-4 (30 PDF)"/>
-								<record columns="FuelCode" values="M-4 (35 PDF)"/>
-								<record columns="FuelCode" values="M-4 (40 PDF)"/>
-								<record columns="FuelCode" values="M-4 (45 PDF)"/>
-								<record columns="FuelCode" values="M-4 (50 PDF)"/>
-								<record columns="FuelCode" values="M-4 (55 PDF)"/>
-								<record columns="FuelCode" values="M-4 (60 PDF)"/>
-								<record columns="FuelCode" values="M-4 (65 PDF)"/>
-								<record columns="FuelCode" values="M-4 (70 PDF)"/>
-								<record columns="FuelCode" values="M-4 (75 PDF)"/>
-								<record columns="FuelCode" values="M-4 (80 PDF)"/>
-								<record columns="FuelCode" values="M-4 (85 PDF)"/>
-								<record columns="FuelCode" values="M-4 (90 PDF)"/>
-								<record columns="FuelCode" values="M-4 (95 PDF)"/>
-								<record columns="FuelCode" values="O-1a"/>
-								<record columns="FuelCode" values="O-1b"/>
-								<record columns="FuelCode" values="S-1"/>
-								<record columns="FuelCode" values="S-2"/>
-								<record columns="FuelCode" values="S-3"/>
-							</defaultRecords>
-						</datasheet>
-					</datasheets>
-				</datafeed>
-				<datafeed name="FuelCodeCrosswalk" displayName="Fuel Code Crosswalk" dataScope="Project">
-					<datasheets>
-						<datasheet name="FuelCodeCrosswalk" displayName="Fuel Code Crosswalk">
-							<columns>
-								<column name="FuelCodeCrosswalkID" dataType="Integer" isPrimary="True"/>
-								<column name="ProjectID" dataType="Integer" isCompositeIndex="True"/>
-								<column name="FuelType" displayName="Fuel Type" dataType="Integer" validationType="Datasheet" formula1="burnP3Plus_FuelType" allowDbNull="False"/>
-								<column name="Code" displayName="Prometheus Fuel Code" dataType="Integer" validationType="Datasheet" formula1="FuelCode"/>
-							</columns>
-							<validations>
-                <validation validationType="Unique" columns="FuelType"/>
-              </validations>
-						</datasheet>
-					</datasheets>
-				</datafeed>
-				<datafeed name="OutputOptionSpatial" displayName="Secondary Outputs" dataScope="Scenario">
-					<datasheets>
-						<datasheet name="OutputOptionSpatial" displayName="Secondary Outputs" isSingleRow="True">
-							<columns>
-								<column name="OutputOptionSpatialID" dataType="Integer" isPrimary="True"/>
-								<column name="ScenarioID" dataType="Integer" isCompositeIndex="True"/>
-								<column name="RateOfSpread" dataType="Boolean" displayName="Rate of Spread Map"/>
-								<column name="FireIntensity" dataType="Boolean" displayName="Fire Intensity Map"/>
-								<column name="SpreadDirection" dataType="Boolean" displayName="Spread Direction Map"/>
-								<column name="SurfaceFuelConsumption" dataType="Boolean" displayName="Surface Fuel Consumption Map"/>
-								<column name="CrownFractionBurned" dataType="Boolean" displayName="Crown Fraction Burned Map"/>
-								<column name="CrownFractionConsumed" dataType="Boolean" displayName="Crown Fraction Consumed Map"/>
-								<column name="TotalFuelConsumption" dataType="Boolean" displayName="Total Fuel Consumption Map"/>
-							</columns>
-						</datasheet>
-					</datasheets>
-				</datafeed>
-				<datafeed name="OutputRateOfSpreadMap" displayName="Output Rate of Spread Map" dataScope="Scenario">
-					<datasheets>
-						<datasheet name="OutputRateOfSpreadMap" displayName="Output Rate of Spread Map">
-							<columns>
-								<column name="OutputRateOfSpreadMapID" dataType="Integer" isPrimary="True"/>
-								<column name="ScenarioID" dataType="Integer" isCompositeIndex="True"/>
-								<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
-								<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-								<column name="FireID" dataType="Integer"/>
-								<column name="FileName" displayName="Rate of Spread Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="RateOfSpread"/>
-								<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-							</columns>
-						</datasheet>
-					</datasheets>
-				</datafeed>
-				<datafeed name="OutputFireIntensityMap" displayName="Output Fire Intensity Map" dataScope="Scenario">
-					<datasheets>
-						<datasheet name="OutputFireIntensityMap" displayName="Output Rate of Spread Map">
-							<columns>
-								<column name="OutputFireIntensityMapID" dataType="Integer" isPrimary="True"/>
-								<column name="ScenarioID" dataType="Integer" isCompositeIndex="True"/>
-								<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
-								<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-								<column name="FireID" dataType="Integer"/>
-								<column name="FileName" displayName="Fire Intensity Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="FireIntensity"/>
-								<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-							</columns>
-						</datasheet>
-					</datasheets>
-				</datafeed>
-				<datafeed name="OutputSpreadDirectionMap" displayName="Output Spread Direction Map" dataScope="Scenario">
-					<datasheets>
-						<datasheet name="OutputSpreadDirectionMap" displayName="Output Spread Direction Map">
-							<columns>
-								<column name="OutputSpreadDirectionMapID" dataType="Integer" isPrimary="True"/>
-								<column name="ScenarioID" dataType="Integer" isCompositeIndex="True"/>
-								<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
-								<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-								<column name="FireID" dataType="Integer"/>
-								<column name="FileName" displayName="Spread Direction Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="SpreadDirection"/>
-								<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-							</columns>
-						</datasheet>
-					</datasheets>
-				</datafeed>
-				<datafeed name="OutputSurfaceFuelConsumptionMap" displayName="Output Surface Fuel Consumption Map" dataScope="Scenario">
-					<datasheets>
-						<datasheet name="OutputSurfaceFuelConsumptionMap" displayName="Output Surface Fuel Consumption Map">
-							<columns>
-								<column name="OutputSurfaceFuelConsumptionMapID" dataType="Integer" isPrimary="True"/>
-								<column name="ScenarioID" dataType="Integer" isCompositeIndex="True"/>
-								<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
-								<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-								<column name="FireID" dataType="Integer"/>
-								<column name="FileName" displayName="Surface Fuel Consumption Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="SurfaceFuelConsumption"/>
-								<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-							</columns>
-						</datasheet>
-					</datasheets>
-				</datafeed>
-				<datafeed name="OutputCrownFractionBurnedMap" displayName="Output Crown Fraction Burned Map" dataScope="Scenario">
-					<datasheets>
-						<datasheet name="OutputCrownFractionBurnedMap" displayName="Output Crown Fraction Burned Map">
-							<columns>
-								<column name="OutputCrownFractionBurnedMapID" dataType="Integer" isPrimary="True"/>
-								<column name="ScenarioID" dataType="Integer" isCompositeIndex="True"/>
-								<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
-								<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-								<column name="FireID" dataType="Integer"/>
-								<column name="FileName" displayName="Crown Fraction Burned Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="CrownFractionBurned"/>
-								<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-							</columns>
-						</datasheet>
-					</datasheets>
-				</datafeed>
-				<datafeed name="OutputCrownFractionConsumedMap" displayName="Output Crown Fraction Consumed Map" dataScope="Scenario">
-					<datasheets>
-						<datasheet name="OutputCrownFractionConsumedMap" displayName="Output Crown Fraction Consumed Map">
-							<columns>
-								<column name="OutputCrownFractionConsumedMapID" dataType="Integer" isPrimary="True"/>
-								<column name="ScenarioID" dataType="Integer" isCompositeIndex="True"/>
-								<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
-								<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-								<column name="FireID" dataType="Integer"/>
-								<column name="FileName" displayName="Crown Fraction Consumed Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="CrownFractionConsumed"/>
-								<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-							</columns>
-						</datasheet>
-					</datasheets>
-				</datafeed>
-				<datafeed name="OutputTotalFuelConsumptionMap" displayName="Output Total Fuel Consumption Map" dataScope="Scenario">
-					<datasheets>
-						<datasheet name="OutputTotalFuelConsumptionMap" displayName="Output Total Fuel Consumption Map">
-							<columns>
-								<column name="OutputTotalFuelConsumptionMapID" dataType="Integer" isPrimary="True"/>
-								<column name="ScenarioID" dataType="Integer" isCompositeIndex="True"/>
-								<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
-								<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-								<column name="FireID" dataType="Integer"/>
-								<column name="FileName" displayName="Total Fuel Consumption Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="TotalFuelConsumption"/>
-								<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-							</columns>
-						</datasheet>
-					</datasheets>
-				</datafeed>
-			</datafeeds>
-			<pipeline>
-				<datafeed name="burnP3Plus_RunControl" type="Input"/>
-				<datafeed name="burnP3Plus_FireResampleOption" type="Input"/>
-				<datafeed name="burnP3Plus_LandscapeRasters" type="Input"/>
-				<datafeed name="burnP3Plus_OutputOption" type="Input"/>
-				<datafeed name="burnP3Plus_OutputOptionSpatial" type="Input"/>
-				<datafeed name="burnP3Plus_DeterministicIgnitionCount" type="Input"/>
-				<datafeed name="burnP3Plus_DeterministicIgnitionLocation" type="Input"/>
-				<datafeed name="burnP3Plus_DeterministicBurnCondition" type="Input"/>
-				<datafeed name="burnP3Plus_WindGrid" type="Input"/>
-				<datafeed name="burnP3Plus_GreenUp" type="Input"/>
-				<datafeed name="burnP3Plus_Curing" type="Input"/>
-				<!-- <datafeed name="burnP3Plus_FuelLoad" type="Input"/> -->
-				<datafeed name="burnP3Plus_OutputFireStatistic" type="Output"/>
-				<datafeed name="burnP3Plus_OutputBurnMap" type="Output"/>
-				<datafeed name="burnP3Plus_OutputFirePerimeter" type="Output"/>
-				<datafeed name="burnP3Plus_OutputAllPerim" type="Output"/>
-				<datafeed name="OutputOptionSpatial" type="Input"/>
-				<datafeed name="OutputRateOfSpreadMap" type="Output"/>
-				<datafeed name="OutputFireIntensityMap" type="Output"/>
-				<datafeed name="OutputSpreadDirectionMap" type="Output"/>
-				<datafeed name="OutputSurfaceFuelConsumptionMap" type="Output"/>
-				<datafeed name="OutputCrownFractionBurnedMap" type="Output"/>
-				<datafeed name="OutputCrownFractionConsumedMap" type="Output"/>
-				<datafeed name="OutputTotalFuelConsumptionMap" type="Output"/>
-			</pipeline>
-		</transformer>
-		<transformer name="RateOfSpreadMap" displayName="Rate of Spread Map by Iteration and Fire ID" className="SyncroSim.StochasticTime.Forms.StochasticTimeExportTransformer" classAssembly="SyncroSim.StochasticTime.Forms" dataSheet="OutputRateOfSpreadMap" column="FileName" isFolderExport="True"/>
-		<transformer name="FireIntensityMap" displayName="Fire Intensity Map by Iteration and Fire ID" className="SyncroSim.StochasticTime.Forms.StochasticTimeExportTransformer" classAssembly="SyncroSim.StochasticTime.Forms" dataSheet="OutputFireIntensityMap" column="FileName" isFolderExport="True"/>
-		<transformer name="SpreadDirectionMap" displayName="Spread Direction Map by Iteration and Fire ID" className="SyncroSim.StochasticTime.Forms.StochasticTimeExportTransformer" classAssembly="SyncroSim.StochasticTime.Forms" dataSheet="OutputSpreadDirectionMap" column="FileName" isFolderExport="True"/>
-		<transformer name="SurfaceFuelConsumptionMap" displayName="Surface Fuel Consumption Map by Iteration and Fire ID" className="SyncroSim.StochasticTime.Forms.StochasticTimeExportTransformer" classAssembly="SyncroSim.StochasticTime.Forms" dataSheet="OutputSurfaceFuelConsumptionMap" column="FileName" isFolderExport="True"/>
-		<transformer name="CrownFractionBurnedMap" displayName="Crown Fraction Burned Map by Iteration and Fire ID" className="SyncroSim.StochasticTime.Forms.StochasticTimeExportTransformer" classAssembly="SyncroSim.StochasticTime.Forms" dataSheet="OutputCrownFractionBurnedMap" column="FileName" isFolderExport="True"/>
-		<transformer name="CrownFractionConsumedMap" displayName="Crown Fraction Consumed Map by Iteration and Fire ID" className="SyncroSim.StochasticTime.Forms.StochasticTimeExportTransformer" classAssembly="SyncroSim.StochasticTime.Forms" dataSheet="OutputCrownFractionConsumedMap" column="FileName" isFolderExport="True"/>
-		<transformer name="TotalFuelConsumptionMap" displayName="Total Fuel Consumption Map by Iteration and Fire ID" className="SyncroSim.StochasticTime.Forms.StochasticTimeExportTransformer" classAssembly="SyncroSim.StochasticTime.Forms" dataSheet="OutputTotalFuelConsumptionMap" column="FileName" isFolderExport="True"/>
-	</transformers>
-	<layouts>
-		<layout name="coreforms_ResultTransformers" appendTo="burnP3Plus_Export">
-			<group name="Export" displayName="Prometheus">
-				<item name="RateOfSpreadMap" displayName="Rate of Spread Maps"/>
-				<item name="FireIntensityMap" displayName="Fire Intensity Maps"/>
-				<item name="SpreadDirectionMap" displayName="Spread Direction Maps"/>
-				<item name="SurfaceFuelConsumptionMap" displayName="Surface Fuel Consumption Maps"/>
-				<item name="CrownFractionBurnedMap" displayName="Crown Fraction Burned Maps"/>
-				<item name="CrownFractionConsumedMap" displayName="Crown Fraction Consumed Maps"/>
-				<item name="TotalFuelConsumptionMap" displayName="Total Fuel Consumption Maps"/>
-			</group>
-		</layout>
-		<layout name="corestimeforms_Maps">
-			<group name="PrometheusSecondaryOutputs" displayName="Prometheus Secondary Outputs">
-				<item name="ros" displayName="Rate of Spread" dataSheet="OutputRateOfSpreadMap" column="FileName"/>
-				<item name="fi" displayName="Fire Intensity" dataSheet="OutputFireIntensityMap" column="FileName"/>
-				<item name="sd" displayName="Spread Direction" dataSheet="OutputSpreadDirectionMap" column="FileName"/>
-				<item name="sfc" displayName="Surface Fuel Consumption" dataSheet="OutputSurfaceFuelConsumptionMap" column="FileName"/>
-				<item name="cfb" displayName="Crown Fraction Burned" dataSheet="OutputCrownFractionBurnedMap" column="FileName"/>
-				<item name="cfc" displayName="Crown Fraction Consumed" dataSheet="OutputCrownFractionConsumedMap" column="FileName"/>
-				<item name="tfc" displayName="Total Fuel Consumption" dataSheet="OutputTotalFuelConsumptionMap" column="FileName"/>
-			</group>
-		</layout>
-		<layout name ="coreforms_ProjectDatafeeds" appendTo="burnP3Plus_FuelDefinition">
-	  	<item name="FuelCodeCrosswalk" displayName="Prometheus Crosswalk"/>
-	  </layout>
-	  <layout name="coreforms_ScenarioDatafeeds" appendTo="burnP3Plus_OutputOption">
-			<item name="OutputOptionSpatial" displayName="Prometheus" showIf="inPipeline"/>
-	  </layout>
-	</layouts>
-	<updateProvider 
-		schemaVersion="2" 
-		minPackageVersion="0.4.11" 
-		className="SyncroSim.Core.XMLUpdateProvider" 
-		classAssembly="SyncroSim.Core"/>
+<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.0.0" url="https://github.com/burnp3/burnp3plusprometheus">
+
+	<builtFor package = "burnP3Plus" version = "2.0.0"/>
+
+	<!--Project Datasheets-->
+
+	<dataSheet name="FuelCode" displayName="Prometheus Fuel Code List" displayMember="FuelCode" dataScope="Project">
+		<column name="FuelCode" displayName="Fuel Code" dataType="String"/>
+		<record columns="FuelCode" values="Non-fuel"/>
+		<record columns="FuelCode" values="C-1"/>
+		<record columns="FuelCode" values="C-2"/>
+		<record columns="FuelCode" values="C-3"/>
+		<record columns="FuelCode" values="C-4"/>
+		<record columns="FuelCode" values="C-5"/>
+		<record columns="FuelCode" values="C-6"/>
+		<record columns="FuelCode" values="C-7"/>
+		<record columns="FuelCode" values="D-1"/>
+		<record columns="FuelCode" values="D-1/D-2"/>
+		<record columns="FuelCode" values="D-2"/>
+		<record columns="FuelCode" values="M-1"/>
+		<record columns="FuelCode" values="M-1 (05 PC)"/>
+		<record columns="FuelCode" values="M-1 (10 PC)"/>
+		<record columns="FuelCode" values="M-1 (15 PC)"/>
+		<record columns="FuelCode" values="M-1 (20 PC)"/>
+		<record columns="FuelCode" values="M-1 (25 PC)"/>
+		<record columns="FuelCode" values="M-1 (30 PC)"/>
+		<record columns="FuelCode" values="M-1 (35 PC)"/>
+		<record columns="FuelCode" values="M-1 (40 PC)"/>
+		<record columns="FuelCode" values="M-1 (45 PC)"/>
+		<record columns="FuelCode" values="M-1 (50 PC)"/>
+		<record columns="FuelCode" values="M-1 (55 PC)"/>
+		<record columns="FuelCode" values="M-1 (60 PC)"/>
+		<record columns="FuelCode" values="M-1 (65 PC)"/>
+		<record columns="FuelCode" values="M-1 (70 PC)"/>
+		<record columns="FuelCode" values="M-1 (75 PC)"/>
+		<record columns="FuelCode" values="M-1 (80 PC)"/>
+		<record columns="FuelCode" values="M-1 (85 PC)"/>
+		<record columns="FuelCode" values="M-1 (90 PC)"/>
+		<record columns="FuelCode" values="M-1 (95 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2"/>
+		<record columns="FuelCode" values="M-1/M-2 (05 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (10 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (15 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (20 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (25 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (30 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (35 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (40 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (45 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (50 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (55 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (60 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (65 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (70 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (75 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (80 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (85 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (90 PC)"/>
+		<record columns="FuelCode" values="M-1/M-2 (95 PC)"/>
+		<record columns="FuelCode" values="M-2"/>
+		<record columns="FuelCode" values="M-2 (05 PC)"/>
+		<record columns="FuelCode" values="M-2 (10 PC)"/>
+		<record columns="FuelCode" values="M-2 (15 PC)"/>
+		<record columns="FuelCode" values="M-2 (20 PC)"/>
+		<record columns="FuelCode" values="M-2 (25 PC)"/>
+		<record columns="FuelCode" values="M-2 (30 PC)"/>
+		<record columns="FuelCode" values="M-2 (35 PC)"/>
+		<record columns="FuelCode" values="M-2 (40 PC)"/>
+		<record columns="FuelCode" values="M-2 (45 PC)"/>
+		<record columns="FuelCode" values="M-2 (50 PC)"/>
+		<record columns="FuelCode" values="M-2 (55 PC)"/>
+		<record columns="FuelCode" values="M-2 (60 PC)"/>
+		<record columns="FuelCode" values="M-2 (65 PC)"/>
+		<record columns="FuelCode" values="M-2 (70 PC)"/>
+		<record columns="FuelCode" values="M-2 (75 PC)"/>
+		<record columns="FuelCode" values="M-2 (80 PC)"/>
+		<record columns="FuelCode" values="M-2 (85 PC)"/>
+		<record columns="FuelCode" values="M-2 (90 PC)"/>
+		<record columns="FuelCode" values="M-2 (95 PC)"/>
+		<record columns="FuelCode" values="M-3"/>
+		<record columns="FuelCode" values="M-3 (05 PDF)"/>
+		<record columns="FuelCode" values="M-3 (10 PDF)"/>
+		<record columns="FuelCode" values="M-3 (15 PDF)"/>
+		<record columns="FuelCode" values="M-3 (20 PDF)"/>
+		<record columns="FuelCode" values="M-3 (25 PDF)"/>
+		<record columns="FuelCode" values="M-3 (30 PDF)"/>
+		<record columns="FuelCode" values="M-3 (35 PDF)"/>
+		<record columns="FuelCode" values="M-3 (40 PDF)"/>
+		<record columns="FuelCode" values="M-3 (45 PDF)"/>
+		<record columns="FuelCode" values="M-3 (50 PDF)"/>
+		<record columns="FuelCode" values="M-3 (55 PDF)"/>
+		<record columns="FuelCode" values="M-3 (60 PDF)"/>
+		<record columns="FuelCode" values="M-3 (65 PDF)"/>
+		<record columns="FuelCode" values="M-3 (70 PDF)"/>
+		<record columns="FuelCode" values="M-3 (75 PDF)"/>
+		<record columns="FuelCode" values="M-3 (80 PDF)"/>
+		<record columns="FuelCode" values="M-3 (85 PDF)"/>
+		<record columns="FuelCode" values="M-3 (90 PDF)"/>
+		<record columns="FuelCode" values="M-3 (95 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4"/>
+		<record columns="FuelCode" values="M-3/M-4 (05 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (10 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (15 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (20 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (25 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (30 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (35 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (40 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (45 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (50 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (55 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (60 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (65 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (70 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (75 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (80 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (85 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (90 PDF)"/>
+		<record columns="FuelCode" values="M-3/M-4 (95 PDF)"/>
+		<record columns="FuelCode" values="M-4"/>
+		<record columns="FuelCode" values="M-4 (05 PDF)"/>
+		<record columns="FuelCode" values="M-4 (10 PDF)"/>
+		<record columns="FuelCode" values="M-4 (15 PDF)"/>
+		<record columns="FuelCode" values="M-4 (20 PDF)"/>
+		<record columns="FuelCode" values="M-4 (25 PDF)"/>
+		<record columns="FuelCode" values="M-4 (30 PDF)"/>
+		<record columns="FuelCode" values="M-4 (35 PDF)"/>
+		<record columns="FuelCode" values="M-4 (40 PDF)"/>
+		<record columns="FuelCode" values="M-4 (45 PDF)"/>
+		<record columns="FuelCode" values="M-4 (50 PDF)"/>
+		<record columns="FuelCode" values="M-4 (55 PDF)"/>
+		<record columns="FuelCode" values="M-4 (60 PDF)"/>
+		<record columns="FuelCode" values="M-4 (65 PDF)"/>
+		<record columns="FuelCode" values="M-4 (70 PDF)"/>
+		<record columns="FuelCode" values="M-4 (75 PDF)"/>
+		<record columns="FuelCode" values="M-4 (80 PDF)"/>
+		<record columns="FuelCode" values="M-4 (85 PDF)"/>
+		<record columns="FuelCode" values="M-4 (90 PDF)"/>
+		<record columns="FuelCode" values="M-4 (95 PDF)"/>
+		<record columns="FuelCode" values="O-1a"/>
+		<record columns="FuelCode" values="O-1b"/>
+		<record columns="FuelCode" values="S-1"/>
+		<record columns="FuelCode" values="S-2"/>
+		<record columns="FuelCode" values="S-3"/>
+	</dataSheet>
+
+	<dataSheet name="FuelCodeCrosswalk" displayName="Fuel Code Crosswalk" dataScope="Project">
+		<column name="FuelType" displayName="Fuel Type" dataType="Integer" validationType="Datasheet" formula1="burnP3Plus_FuelType" allowDbNull="False"/>
+		<column name="Code" displayName="Prometheus Fuel Code" dataType="Integer" validationType="Datasheet" formula1="FuelCode"/>
+		<validation validationType="Unique" columns="FuelType"/>
+	</dataSheet>
+
+	<!--Scenario Datasheets-->
+
+	<dataSheet name="OutputOptionSpatial" displayName="Secondary Outputs" isSingleRow="True">
+		<column name="RateOfSpread" dataType="Boolean" displayName="Rate of Spread Map"/>
+		<column name="FireIntensity" dataType="Boolean" displayName="Fire Intensity Map"/>
+		<column name="SpreadDirection" dataType="Boolean" displayName="Spread Direction Map"/>
+		<column name="SurfaceFuelConsumption" dataType="Boolean" displayName="Surface Fuel Consumption Map"/>
+		<column name="CrownFractionBurned" dataType="Boolean" displayName="Crown Fraction Burned Map"/>
+		<column name="CrownFractionConsumed" dataType="Boolean" displayName="Crown Fraction Consumed Map"/>
+		<column name="TotalFuelConsumption" dataType="Boolean" displayName="Total Fuel Consumption Map"/>
+	</dataSheet>
+
+	<dataSheet name="OutputRateOfSpreadMap" displayName="Output Rate of Spread Map">
+		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
+		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
+		<column name="FireID" dataType="Integer"/>
+		<column name="FileName" displayName="Rate of Spread Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="RateOfSpread"/>
+		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
+	</dataSheet>
+
+	<dataSheet name="OutputFireIntensityMap" displayName="Output Rate of Spread Map">
+		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
+		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
+		<column name="FireID" dataType="Integer"/>
+		<column name="FileName" displayName="Fire Intensity Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="FireIntensity"/>
+		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
+	</dataSheet>
+
+	<dataSheet name="OutputSpreadDirectionMap" displayName="Output Spread Direction Map">
+		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
+		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
+		<column name="FireID" dataType="Integer"/>
+		<column name="FileName" displayName="Spread Direction Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="SpreadDirection"/>
+		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
+	</dataSheet>
+
+	<dataSheet name="OutputSurfaceFuelConsumptionMap" displayName="Output Surface Fuel Consumption Map">
+		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
+		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
+		<column name="FireID" dataType="Integer"/>
+		<column name="FileName" displayName="Surface Fuel Consumption Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="SurfaceFuelConsumption"/>
+		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
+	</dataSheet>
+
+	<dataSheet name="OutputCrownFractionBurnedMap" displayName="Output Crown Fraction Burned Map">
+		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
+		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
+		<column name="FireID" dataType="Integer"/>
+		<column name="FileName" displayName="Crown Fraction Burned Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="CrownFractionBurned"/>
+		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
+	</dataSheet>
+
+	<dataSheet name="OutputCrownFractionConsumedMap" displayName="Output Crown Fraction Consumed Map">
+		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
+		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
+		<column name="FireID" dataType="Integer"/>
+		<column name="FileName" displayName="Crown Fraction Consumed Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="CrownFractionConsumed"/>
+		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
+	</dataSheet>
+
+	<dataSheet name="OutputTotalFuelConsumptionMap" displayName="Output Total Fuel Consumption Map">
+		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
+		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
+		<column name="FireID" dataType="Integer"/>
+		<column name="FileName" displayName="Total Fuel Consumption Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="TotalFuelConsumption"/>
+		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
+	</dataSheet>
+
+	<!--Transformers-->
+
+	<!--Prometheus Fire Growth Transformer-->
+	<transformer name="fireGrowthPrometheus" isPrimary="True" displayName="3 - Grow Fires with Prometheus" isRunnable="True" programName="Rscript" runContext="AllowRemote" isStochasticTime = "True" programArguments="growth-pandora.R" configurationSheet="burnP3Plus_RunControl" condaEnv="burnP3Plus.yml" condaEnvVersion="1">
+		<dataSheet name="burnP3Plus_RunControl" type="Input"/>
+		<dataSheet name="burnP3Plus_FireResampleOption" type="Input"/>
+		<dataSheet name="burnP3Plus_LandscapeRasters" type="Input"/>
+		<dataSheet name="burnP3Plus_OutputOption" type="Input"/>
+		<dataSheet name="burnP3Plus_OutputOptionSpatial" type="Input"/>
+		<dataSheet name="burnP3Plus_DeterministicIgnitionCount" type="Input"/>
+		<dataSheet name="burnP3Plus_DeterministicIgnitionLocation" type="Input"/>
+		<dataSheet name="burnP3Plus_DeterministicBurnCondition" type="Input"/>
+		<dataSheet name="burnP3Plus_WindGrid" type="Input"/>
+		<dataSheet name="burnP3Plus_GreenUp" type="Input"/>
+		<dataSheet name="burnP3Plus_Curing" type="Input"/>
+		<!-- <dataSheet name="burnP3Plus_FuelLoad" type="Input"/> -->
+		<dataSheet name="burnP3Plus_OutputFireStatistic" type="Output"/>
+		<dataSheet name="burnP3Plus_OutputBurnMap" type="Output"/>
+		<dataSheet name="burnP3Plus_OutputFirePerimeter" type="Output"/>
+		<dataSheet name="burnP3Plus_OutputAllPerim" type="Output"/>
+		<dataSheet name="OutputOptionSpatial" type="Input"/>
+		<dataSheet name="OutputRateOfSpreadMap" type="Output"/>
+		<dataSheet name="OutputFireIntensityMap" type="Output"/>
+		<dataSheet name="OutputSpreadDirectionMap" type="Output"/>
+		<dataSheet name="OutputSurfaceFuelConsumptionMap" type="Output"/>
+		<dataSheet name="OutputCrownFractionBurnedMap" type="Output"/>
+		<dataSheet name="OutputCrownFractionConsumedMap" type="Output"/>
+		<dataSheet name="OutputTotalFuelConsumptionMap" type="Output"/>
+	</transformer>
+
+	<!--Export Transformers-->
+	<transformer name="RateOfSpreadMap" displayName="Rate of Spread Map by Iteration and Fire ID" isExport="True" dataSheet="OutputRateOfSpreadMap" column="FileName" isFolderExport="True"/>
+	<transformer name="FireIntensityMap" displayName="Fire Intensity Map by Iteration and Fire ID" isExport="True" dataSheet="OutputFireIntensityMap" column="FileName" isFolderExport="True"/>
+	<transformer name="SpreadDirectionMap" displayName="Spread Direction Map by Iteration and Fire ID" isExport="True" dataSheet="OutputSpreadDirectionMap" column="FileName" isFolderExport="True"/>
+	<transformer name="SurfaceFuelConsumptionMap" displayName="Surface Fuel Consumption Map by Iteration and Fire ID" isExport="True" dataSheet="OutputSurfaceFuelConsumptionMap" column="FileName" isFolderExport="True"/>
+	<transformer name="CrownFractionBurnedMap" displayName="Crown Fraction Burned Map by Iteration and Fire ID" isExport="True" dataSheet="OutputCrownFractionBurnedMap" column="FileName" isFolderExport="True"/>
+	<transformer name="CrownFractionConsumedMap" displayName="Crown Fraction Consumed Map by Iteration and Fire ID" isExport="True" dataSheet="OutputCrownFractionConsumedMap" column="FileName" isFolderExport="True"/>
+	<transformer name="TotalFuelConsumptionMap" displayName="Total Fuel Consumption Map by Iteration and Fire ID" isExport="True" dataSheet="OutputTotalFuelConsumptionMap" column="FileName" isFolderExport="True"/>
+
+	<!--Layouts-->
+
+	<!--Results Transformer Layout-->
+	<layout type="Export">
+		<group name="Export" displayName="Prometheus">
+			<item name="RateOfSpreadMap" displayName="Rate of Spread Maps"/>
+			<item name="FireIntensityMap" displayName="Fire Intensity Maps"/>
+			<item name="SpreadDirectionMap" displayName="Spread Direction Maps"/>
+			<item name="SurfaceFuelConsumptionMap" displayName="Surface Fuel Consumption Maps"/>
+			<item name="CrownFractionBurnedMap" displayName="Crown Fraction Burned Maps"/>
+			<item name="CrownFractionConsumedMap" displayName="Crown Fraction Consumed Maps"/>
+			<item name="TotalFuelConsumptionMap" displayName="Total Fuel Consumption Maps"/>
+		</group>
+	</layout>
+
+	<!--Map Layout-->
+	<layout type="Map">
+		<group name="PrometheusSecondaryOutputs" displayName="Prometheus Secondary Outputs">
+			<item name="ros" displayName="Rate of Spread" dataSheet="OutputRateOfSpreadMap" column="FileName"/>
+			<item name="fi" displayName="Fire Intensity" dataSheet="OutputFireIntensityMap" column="FileName"/>
+			<item name="sd" displayName="Spread Direction" dataSheet="OutputSpreadDirectionMap" column="FileName"/>
+			<item name="sfc" displayName="Surface Fuel Consumption" dataSheet="OutputSurfaceFuelConsumptionMap" column="FileName"/>
+			<item name="cfb" displayName="Crown Fraction Burned" dataSheet="OutputCrownFractionBurnedMap" column="FileName"/>
+			<item name="cfc" displayName="Crown Fraction Consumed" dataSheet="OutputCrownFractionConsumedMap" column="FileName"/>
+			<item name="tfc" displayName="Total Fuel Consumption" dataSheet="OutputTotalFuelConsumptionMap" column="FileName"/>
+		</group>
+	</layout>
+
+	<!--Project Layout-->
+	<layout type="Project">
+		<item name="FuelCodeCrosswalk" displayName="Prometheus Crosswalk"/>
+	</layout>
+
+	<!--Scenario Layout-->
+	<layout type="Scenario">
+		<item name="OutputOptionSpatial" displayName="Prometheus" showIf="inPipeline"/>
+	</layout>
+
 </package>
