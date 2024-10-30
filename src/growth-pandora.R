@@ -573,7 +573,7 @@ generateWeatherFile <- function(weatherData, UniqueBatchFireIndex) {
       unlist()) %>%
     # Next we add in columns of mock date and time since this is requried by Pandora
     mutate(
-      date = as.integer((row_number() + 12) / 24) + ymd(20000101),
+      date = as.integer((row_number() + 12) / 24) + ymd(20000601),
       date = str_c(day(date), "/", month(date), "/", year(date)),
       time = (row_number() + 12) %% 24
     ) %>%
@@ -613,7 +613,7 @@ generateParamaterTemplate <- function(placeHolderNames){
       NA
     },
     str_c("Fuel_Table ", fuelLookup),
-    str_c("Ign_DateTime 1/1/2000:13:00:00"),
+    str_c("Ign_DateTime 1/6/2000:13:00:00"),
     str_c("Ign_Lon ", placeHolderNames$lon),
     str_c("Ign_Lat ", placeHolderNames$lat),
     str_c("WxStation_Lon ", weatherStationLocation[1]),
@@ -622,6 +622,7 @@ generateParamaterTemplate <- function(placeHolderNames){
     str_c("Wx_file ", placeHolderNames$weatherFile),
     str_c("Init_hour 13"),
     str_c("FFMC_Method 5"),
+    str_c("Out_GridType 0"),
     str_c("Threads ", numThreads),
     if (useWindGrid) {
       WindGridParameterStrings
@@ -787,12 +788,13 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
 
             # Rewrite as GeoTiff to output folder
             rast(inputComponentFileName) %>%
+              {crs(.) <- crs(fuelsRaster); .} %>%
               writeRaster(outputComponentFileName,
                 overwrite = T,
                 NAflag = -9999,
                 wopt = list(
                   filetype = "GTiff",
-                  datatype = "INT4S",
+                  datatype = "FLT4S",
                   gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
                 )
               )
