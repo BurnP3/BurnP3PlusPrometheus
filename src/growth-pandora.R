@@ -631,7 +631,7 @@ generateParamaterTemplate <- function(placeHolderNames){
     },
     str_c("Greenup ", placeHolderNames$greenup),
     if (setGrassCuring) {
-      str_c("%Grass_Curing ", placeHolderNames$grassCuring)  # TODO: Set curing for values other than just 31, 32. Code for that:, " ", str_c(FuelType %>% filter(str_detect(Code, "O-1")) %>% pull(ID), collapse = " ")
+      str_c("Grass_Curing ", placeHolderNames$grassCuring, " ", str_c(FuelType %>% filter(str_detect(Code, "O-1")) %>% pull(ID), collapse = " "))
     } else {
       NA
     },
