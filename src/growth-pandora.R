@@ -223,6 +223,7 @@ parameterFilePlaceHolders <- list(
   lon         = "lonPlaceHolder",
   lat         = "latPlaceHolder",
   weatherFile = "weatherFilePlaceHolder",
+  ignFile     = "ignitionFilePlaceHolder",
   greenup     = "greenupPlaceHolder",
   grassCuring = "grassCuringPlaceHolder",
   fuelLoad    = "fuelLoadPlaceHolder",
@@ -351,6 +352,10 @@ tempDir <- ssimEnvironment()$TempDirectory %>%
   file.path("growth-pandora/")
 unlink(tempDir, recursive = T, force = T)
 dir.create(tempDir, showWarnings = F)
+
+ignitionFolder <- file.path(tempDir, "Ignitions")
+unlink(ignitionFolder, recursive = T, force = T)
+dir.create(ignitionFolder, showWarnings = F)
 
 weatherFolder <- file.path(tempDir, "Weathers")
 unlink(weatherFolder, recursive = T, force = T)
@@ -504,6 +509,7 @@ runBatch <- function(batchInputs) {
   
   # - Unnest and process weather info
   batchWeather <- unnest(batchInputs, data)
+  generateIgnitionFiles(batchInputs)
   generateWeatherFiles(batchWeather)
   
   # Reset and build parameter file, get list of expected output file tags
@@ -599,6 +605,36 @@ generateWeatherFiles <- function(DeterministicBurnCondition){
   invisible()
 }
 
+# Function to convert ignition locations into shape files expected by Pandora
+generateIgnitionFile <- function(Latitude, Longitude, UniqueBatchFireIndex, ...) {
+  # Providing ignition location or a shapefile of points causes Pandora to simulate the fire with acceleration, which is not appropriate for these simulations
+  # Instead, we provide a very small polygon that includes the centroid of the pixel to start the ignition in to simulate without acceleration
+  padding <- 3e-7
+  x <- data.frame(
+    lat = c(Latitude - padding, Latitude - padding, Latitude + padding, Latitude + padding),
+    lon = c(Longitude - padding, Longitude + padding, Longitude + padding, Longitude - padding) 
+  ) %>%
+    sf::st_as_sf(
+      coords = c("lon", "lat"),
+      crs = "epsg:4326"
+    ) %>% # TODO: Does this need to be projected?
+    st_combine() %>%
+    sf::st_cast("POLYGON") %>%
+    st_write(file.path(ignitionFolder, str_c("Ignition", UniqueBatchFireIndex, ".shp")))
+  invisible()
+}
+
+# Function to split deterministic ignition location into ignition files by iteration and fire id
+generateIgnitionFiles <- function(DeterministicIgnitionLocation){
+  # Clear out old weather files if present
+  resetFolder(ignitionFolder)
+  
+  # Generate files as needed
+  DeterministicIgnitionLocation %>%
+    pmap(generateIgnitionFile)
+  invisible()
+}
+
 # Function to generate Pandora paramter file template for single fire
 generateParamaterTemplate <- function(placeHolderNames){
   # Build the parameter file line-by-line
@@ -613,9 +649,10 @@ generateParamaterTemplate <- function(placeHolderNames){
       NA
     },
     str_c("Fuel_Table ", fuelLookup),
-    str_c("Ign_DateTime 1/6/2000:13:00:00"),
-    str_c("Ign_Lon ", placeHolderNames$lon),
-    str_c("Ign_Lat ", placeHolderNames$lat),
+    str_c("Ign_File 1/6/2000:13:00:00 ", placeHolderNames$ignFile),
+    #str_c("Ign_DateTime 1/6/2000:13:00:00"),
+    #str_c("Ign_Lon ", placeHolderNames$lon),
+    #str_c("Ign_Lat ", placeHolderNames$lat),
     str_c("WxStation_Lon ", weatherStationLocation[1]),
     str_c("WxStation_Lat ", weatherStationLocation[2]),
     str_c("WxStation_Elev ", weatherStationElevation),
@@ -668,6 +705,7 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
 
   # Calculate values to fill placeholders in template
   weatherFile <- file.path(weatherFolder, str_c("Weather", UniqueBatchFireIndex, ".txt"))
+  ignFile <- file.path(ignitionFolder, str_c("Ignition", UniqueBatchFireIndex, ".shp"))
 
   greenupValue <-  GreenUp %>%
     filter(Season %in% c(season, NA)) %>%
@@ -700,9 +738,10 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
   # Replace placeholders in template
   parameterFileText <- parameterFileTemplate %>%
     str_replace_all(placeHolderNames$fileTag, fileTag) %>%
-    str_replace_all(placeHolderNames$lon, as.character(Lon)) %>%
-    str_replace_all(placeHolderNames$lat, as.character(Lat)) %>%
+    # str_replace_all(placeHolderNames$lon, as.character(Lon)) %>%
+    # str_replace_all(placeHolderNames$lat, as.character(Lat)) %>%
     str_replace_all(placeHolderNames$weatherFile, weatherFile) %>%
+    str_replace_all(placeHolderNames$ignFile, ignFile) %>%
     str_replace_all(placeHolderNames$greenup, as.character(greenupValue)) %>%
     str_replace_all(placeHolderNames$grassCuring, as.character(grassCuringValue)) %>%
     str_replace_all(placeHolderNames$fuelLoad, as.character(fuelLoadValue)) %>%
