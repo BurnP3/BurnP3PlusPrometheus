@@ -469,8 +469,10 @@ processOutputs <- function(batchOutput, rawOutputGridPaths) {
               Seasons = list(Season))
   
   # Generate burn count maps
-  for (i in seq_len(nrow(ignitionsToExportTable)))
+  for (i in seq_len(nrow(ignitionsToExportTable))) {
     generateBurnAccumulators(Iteration = ignitionsToExportTable$Iteration[i], UniqueFireIDs = ignitionsToExportTable$UniqueBatchFireIndices[[i]], burnGrids = rawOutputGridPaths, FireIDs = ignitionsToExportTable$FireIDs[[i]], Seasons = ignitionsToExportTable$Seasons[[i]])
+    invisible(gc())
+  }
 }
 
 # Function to call Pandora on the (global) parameter file
