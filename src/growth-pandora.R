@@ -223,6 +223,7 @@ parameterFilePlaceHolders <- list(
   lon         = "lonPlaceHolder",
   lat         = "latPlaceHolder",
   weatherFile = "weatherFilePlaceHolder",
+  ignDate     = "ignitionDatePlaceHolder",
   ignFile     = "ignitionFilePlaceHolder",
   greenup     = "greenupPlaceHolder",
   grassCuring = "grassCuringPlaceHolder",
@@ -562,7 +563,9 @@ runBatch <- function(batchInputs) {
 
 # Function to convert daily weather data for every day of burning to format
 # expected by Pandora and save to file
-generateWeatherFile <- function(weatherData, UniqueBatchFireIndex) {
+generateWeatherFile <- function(weatherData, UniqueBatchFireIndex, season, year = 2001) {
+  ignDate <- getSeasonMedianDate(season, year)
+
   weatherData %>%
     # To convert daily weather to hourly, we need to repeat each row for every
     # hour burned that day and pad the rest of the day with zeros. To do this,
@@ -581,7 +584,7 @@ generateWeatherFile <- function(weatherData, UniqueBatchFireIndex) {
       unlist()) %>%
     # Next we add in columns of mock date and time since this is requried by Pandora
     mutate(
-      date = as.integer((row_number() + 12) / 24) + ymd(20000601),
+      date = as.integer((row_number() + 12) / 24) + ignDate,
       date = str_c(day(date), "/", month(date), "/", year(date)),
       time = (row_number() + 12) %% 24
     ) %>%
@@ -598,11 +601,11 @@ generateWeatherFiles <- function(DeterministicBurnCondition){
   
   # Generate files as needed
   DeterministicBurnCondition %>%
-    group_by(Iteration, FireID, UniqueBatchFireIndex) %>%
+    group_by(Iteration, FireID, UniqueBatchFireIndex, Season) %>%
     nest() %>%
     ungroup() %>%
     arrange(Iteration, FireID, UniqueBatchFireIndex) %>%
-    dplyr::select(weatherData = data, UniqueBatchFireIndex = UniqueBatchFireIndex) %>%
+    dplyr::select(weatherData = data, UniqueBatchFireIndex = UniqueBatchFireIndex, season = Season) %>%
     pmap(generateWeatherFile)
   invisible()
 }
@@ -637,6 +640,24 @@ generateIgnitionFiles <- function(DeterministicIgnitionLocation){
   invisible()
 }
 
+# Function to get median julian day from season
+# - 2001 is default to avoid leap years
+getSeasonMedianDate <- function(season, year = 2001) {
+  # Extract Julian day
+  julian_day <- SeasonTable %>%
+    dplyr::filter(Name == season) %>%
+    pull(JulianDay)
+
+  # Create date object
+  d <- lubridate::ymd(20010101)
+
+  # Set julian day and year
+  lubridate::yday(d) <- julian_day
+  lubridate::year(d) <- year
+
+  return(d)
+}
+
 # Function to generate Pandora paramter file template for single fire
 generateParamaterTemplate <- function(placeHolderNames){
   # Build the parameter file line-by-line
@@ -651,7 +672,7 @@ generateParamaterTemplate <- function(placeHolderNames){
       NA
     },
     str_c("Fuel_Table ", fuelLookup),
-    str_c("Ign_File 1/6/2000:13:00:00 ", placeHolderNames$ignFile),
+    str_c("Ign_File ", placeHolderNames$ignDate, ":13:00:00 ", placeHolderNames$ignFile),
     #str_c("Ign_DateTime 1/6/2000:13:00:00"),
     #str_c("Ign_Lon ", placeHolderNames$lon),
     #str_c("Ign_Lat ", placeHolderNames$lat),
@@ -709,15 +730,18 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
   weatherFile <- file.path(weatherFolder, str_c("Weather", UniqueBatchFireIndex, ".txt"))
   ignFile <- file.path(ignitionFolder, str_c("Ignition", UniqueBatchFireIndex, ".shp"))
 
+  ignDate <- getSeasonMedianDate(season) %>%
+    lubridate::stamp("31/01/1999")() # dd/mm/yyyy is expected by Pandora
+
   greenupValue <-  GreenUp %>%
-    filter(Season %in% c(season, NA)) %>%
+    dplyr::filter(Season %in% c(season, NA)) %>%
     arrange(Season) %>% pull(GreenUp) %>%
     pluck(1) %>%
     as.numeric()
 
   if(setGrassCuring) {
     grassCuringValue <- Curing %>%
-      filter(Season %in% c(season, NA)) %>%
+      dplyr::filter(Season %in% c(season, NA)) %>%
       arrange(Season) %>%
       pull(Curing) %>%
       pluck(1)
@@ -743,6 +767,7 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
     # str_replace_all(placeHolderNames$lon, as.character(Lon)) %>%
     # str_replace_all(placeHolderNames$lat, as.character(Lat)) %>%
     str_replace_all(placeHolderNames$weatherFile, weatherFile) %>%
+    str_replace_all(placeHolderNames$ignDate, ignDate) %>%
     str_replace_all(placeHolderNames$ignFile, ignFile) %>%
     str_replace_all(placeHolderNames$greenup, as.character(greenupValue)) %>%
     str_replace_all(placeHolderNames$grassCuring, as.character(grassCuringValue)) %>%
