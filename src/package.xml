@@ -222,31 +222,39 @@
 	<!--Transformers-->
 
 	<!--Prometheus Fire Growth Transformer-->
-	<transformer name="fireGrowthPrometheus" isPrimary="True" displayName="3 - Grow Fires with Prometheus" isRunnable="True" programName="Rscript" runContext="AllowRemote" isStochasticTime = "True" programArguments="growth-pandora.R" configurationSheet="burnP3Plus_RunControl" condaEnv="burnP3Plus.yml" condaEnvVersion="1">
-		<dataSheet name="burnP3Plus_RunControl" type="Input"/>
-		<dataSheet name="burnP3Plus_FireResampleOption" type="Input"/>
-		<dataSheet name="burnP3Plus_LandscapeRasters" type="Input"/>
-		<dataSheet name="burnP3Plus_OutputOption" type="Input"/>
-		<dataSheet name="burnP3Plus_OutputOptionSpatial" type="Input"/>
-		<dataSheet name="burnP3Plus_DeterministicIgnitionCount" type="Input"/>
-		<dataSheet name="burnP3Plus_DeterministicIgnitionLocation" type="Input"/>
-		<dataSheet name="burnP3Plus_DeterministicBurnCondition" type="Input"/>
-		<dataSheet name="burnP3Plus_WindGrid" type="Input"/>
-		<dataSheet name="burnP3Plus_GreenUp" type="Input"/>
-		<dataSheet name="burnP3Plus_Curing" type="Input"/>
-		<!-- <dataSheet name="burnP3Plus_FuelLoad" type="Input"/> -->
-		<dataSheet name="burnP3Plus_OutputFireStatistic" type="Output"/>
-		<dataSheet name="burnP3Plus_OutputBurnMap" type="Output"/>
-		<dataSheet name="burnP3Plus_OutputFirePerimeter" type="Output"/>
-		<dataSheet name="burnP3Plus_OutputAllPerim" type="Output"/>
-		<dataSheet name="OutputOptionSpatial" type="Input"/>
-		<dataSheet name="OutputRateOfSpreadMap" type="Output"/>
-		<dataSheet name="OutputFireIntensityMap" type="Output"/>
-		<dataSheet name="OutputSpreadDirectionMap" type="Output"/>
-		<dataSheet name="OutputSurfaceFuelConsumptionMap" type="Output"/>
-		<dataSheet name="OutputCrownFractionBurnedMap" type="Output"/>
-		<dataSheet name="OutputCrownFractionConsumedMap" type="Output"/>
-		<dataSheet name="OutputTotalFuelConsumptionMap" type="Output"/>
+	<transformer 
+		name="fireGrowthPrometheus" 
+		displayName="3 - Grow Fires with Prometheus" 
+		programName="Rscript" 
+		isStochasticTime = "True" 
+		programArguments="growth-pandora.R" 
+		configurationSheet="burnP3Plus_RunControl" 
+		condaEnv="burnP3Plus.yml" 
+		condaEnvVersion="1">
+			<dataSheet name="burnP3Plus_RunControl" type="Input"/>
+			<dataSheet name="burnP3Plus_FireResampleOption" type="Input"/>
+			<dataSheet name="burnP3Plus_LandscapeRasters" type="Input"/>
+			<dataSheet name="burnP3Plus_OutputOption" type="Input"/>
+			<dataSheet name="burnP3Plus_OutputOptionSpatial" type="Input"/>
+			<dataSheet name="burnP3Plus_DeterministicIgnitionCount" type="Input"/>
+			<dataSheet name="burnP3Plus_DeterministicIgnitionLocation" type="Input"/>
+			<dataSheet name="burnP3Plus_DeterministicBurnCondition" type="Input"/>
+			<dataSheet name="burnP3Plus_WindGrid" type="Input"/>
+			<dataSheet name="burnP3Plus_GreenUp" type="Input"/>
+			<dataSheet name="burnP3Plus_Curing" type="Input"/>
+			<!-- <dataSheet name="burnP3Plus_FuelLoad" type="Input"/> -->
+			<dataSheet name="burnP3Plus_OutputFireStatistic" type="Output"/>
+			<dataSheet name="burnP3Plus_OutputBurnMap" type="Output"/>
+			<dataSheet name="burnP3Plus_OutputFirePerimeter" type="Output"/>
+			<dataSheet name="burnP3Plus_OutputAllPerim" type="Output"/>
+			<dataSheet name="OutputOptionSpatial" type="Input"/>
+			<dataSheet name="OutputRateOfSpreadMap" type="Output"/>
+			<dataSheet name="OutputFireIntensityMap" type="Output"/>
+			<dataSheet name="OutputSpreadDirectionMap" type="Output"/>
+			<dataSheet name="OutputSurfaceFuelConsumptionMap" type="Output"/>
+			<dataSheet name="OutputCrownFractionBurnedMap" type="Output"/>
+			<dataSheet name="OutputCrownFractionConsumedMap" type="Output"/>
+			<dataSheet name="OutputTotalFuelConsumptionMap" type="Output"/>
 	</transformer>
 
 	<!--Export Transformers-->

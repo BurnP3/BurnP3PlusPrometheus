@@ -26,7 +26,7 @@ checkPackageVersion <- function(packageString, minimumVersion){
   }
 }
 
-checkPackageVersion("rsyncrosim", "2.0.0")
+checkPackageVersion("rsyncrosim", "2.0.1")
 checkPackageVersion("tidyverse",  "2.0.0")
 checkPackageVersion("dplyr",      "1.1.2")
 checkPackageVersion("codetools",  "0.2.19")
@@ -158,6 +158,14 @@ if (isDatasheetEmpty(ResampleOption)) {
   updateRunLog("No Minimum Fire Size chosen.\nDefaulting to a Minimum Fire Size of 1ha.\nPlease see the Fire Resampling Options table for more details.", type = "info")
   ResampleOption[1, ] <- c(1, 0)
   saveDatasheet(myScenario, ResampleOption, "burnP3Plus_FireResampleOption")
+}
+
+if (isDatasheetEmpty(DeterministicIgnitionLocation)){
+  stop("Deterministic Ignition Location datasheet cannot be empty!")
+}
+
+if(isDatasheetEmpty(DeterministicBurnCondition)){
+  stop("Deterministic Burn Conditions datasheet cannot be empty!")
 }
 
 if (isDatasheetEmpty(GreenUp)) {
