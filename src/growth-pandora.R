@@ -26,7 +26,7 @@ checkPackageVersion <- function(packageString, minimumVersion){
   }
 }
 
-checkPackageVersion("rsyncrosim", "2.0.1")
+checkPackageVersion("rsyncrosim", "2.0.0")
 checkPackageVersion("tidyverse",  "2.0.0")
 checkPackageVersion("dplyr",      "1.1.2")
 checkPackageVersion("codetools",  "0.2.19")
@@ -231,6 +231,8 @@ parameterFilePlaceHolders <- list(
   lon         = "lonPlaceHolder",
   lat         = "latPlaceHolder",
   weatherFile = "weatherFilePlaceHolder",
+  ignDate     = "ignitionDatePlaceHolder",
+  ignFile     = "ignitionFilePlaceHolder",
   greenup     = "greenupPlaceHolder",
   grassCuring = "grassCuringPlaceHolder",
   fuelLoad    = "fuelLoadPlaceHolder",
@@ -360,6 +362,10 @@ tempDir <- ssimEnvironment()$TempDirectory %>%
 unlink(tempDir, recursive = T, force = T)
 dir.create(tempDir, showWarnings = F)
 
+ignitionFolder <- file.path(tempDir, "Ignitions")
+unlink(ignitionFolder, recursive = T, force = T)
+dir.create(ignitionFolder, showWarnings = F)
+
 weatherFolder <- file.path(tempDir, "Weathers")
 unlink(weatherFolder, recursive = T, force = T)
 dir.create(weatherFolder, showWarnings = F)
@@ -472,8 +478,10 @@ processOutputs <- function(batchOutput, rawOutputGridPaths) {
               Seasons = list(Season))
   
   # Generate burn count maps
-  for (i in seq_len(nrow(ignitionsToExportTable)))
+  for (i in seq_len(nrow(ignitionsToExportTable))) {
     generateBurnAccumulators(Iteration = ignitionsToExportTable$Iteration[i], UniqueFireIDs = ignitionsToExportTable$UniqueBatchFireIndices[[i]], burnGrids = rawOutputGridPaths, FireIDs = ignitionsToExportTable$FireIDs[[i]], Seasons = ignitionsToExportTable$Seasons[[i]])
+    invisible(gc())
+  }
 }
 
 # Function to call Pandora on the (global) parameter file
@@ -512,6 +520,7 @@ runBatch <- function(batchInputs) {
   
   # - Unnest and process weather info
   batchWeather <- unnest(batchInputs, data)
+  generateIgnitionFiles(batchInputs)
   generateWeatherFiles(batchWeather)
   
   # Reset and build parameter file, get list of expected output file tags
@@ -562,7 +571,9 @@ runBatch <- function(batchInputs) {
 
 # Function to convert daily weather data for every day of burning to format
 # expected by Pandora and save to file
-generateWeatherFile <- function(weatherData, UniqueBatchFireIndex) {
+generateWeatherFile <- function(weatherData, UniqueBatchFireIndex, season, year = 2001) {
+  ignDate <- getSeasonMedianDate(season, year)
+
   weatherData %>%
     # To convert daily weather to hourly, we need to repeat each row for every
     # hour burned that day and pad the rest of the day with zeros. To do this,
@@ -581,7 +592,7 @@ generateWeatherFile <- function(weatherData, UniqueBatchFireIndex) {
       unlist()) %>%
     # Next we add in columns of mock date and time since this is requried by Pandora
     mutate(
-      date = as.integer((row_number() + 12) / 24) + ymd(20000101),
+      date = as.integer((row_number() + 12) / 24) + ignDate,
       date = str_c(day(date), "/", month(date), "/", year(date)),
       time = (row_number() + 12) %% 24
     ) %>%
@@ -598,13 +609,61 @@ generateWeatherFiles <- function(DeterministicBurnCondition){
   
   # Generate files as needed
   DeterministicBurnCondition %>%
-    group_by(Iteration, FireID, UniqueBatchFireIndex) %>%
+    group_by(Iteration, FireID, UniqueBatchFireIndex, Season) %>%
     nest() %>%
     ungroup() %>%
     arrange(Iteration, FireID, UniqueBatchFireIndex) %>%
-    dplyr::select(weatherData = data, UniqueBatchFireIndex = UniqueBatchFireIndex) %>%
+    dplyr::select(weatherData = data, UniqueBatchFireIndex = UniqueBatchFireIndex, season = Season) %>%
     pmap(generateWeatherFile)
   invisible()
+}
+
+# Function to convert ignition locations into shape files expected by Pandora
+generateIgnitionFile <- function(Latitude, Longitude, UniqueBatchFireIndex, ...) {
+  # Providing ignition location or a shapefile of points causes Pandora to simulate the fire with acceleration, which is not appropriate for these simulations
+  # Instead, we provide a very small polygon that includes the centroid of the pixel to start the ignition in to simulate without acceleration
+  padding <- 3e-7
+  x <- data.frame(
+    lat = c(Latitude - padding, Latitude - padding, Latitude + padding, Latitude + padding),
+    lon = c(Longitude - padding, Longitude + padding, Longitude + padding, Longitude - padding) 
+  ) %>%
+    sf::st_as_sf(
+      coords = c("lon", "lat"),
+      crs = "epsg:4326"
+    ) %>% # TODO: Does this need to be projected?
+    st_combine() %>%
+    sf::st_cast("POLYGON") %>%
+    st_write(file.path(ignitionFolder, str_c("Ignition", UniqueBatchFireIndex, ".shp")))
+  invisible()
+}
+
+# Function to split deterministic ignition location into ignition files by iteration and fire id
+generateIgnitionFiles <- function(DeterministicIgnitionLocation){
+  # Clear out old weather files if present
+  resetFolder(ignitionFolder)
+  
+  # Generate files as needed
+  DeterministicIgnitionLocation %>%
+    pmap(generateIgnitionFile)
+  invisible()
+}
+
+# Function to get median julian day from season
+# - 2001 is default to avoid leap years
+getSeasonMedianDate <- function(season, year = 2001) {
+  # Extract Julian day
+  julian_day <- SeasonTable %>%
+    dplyr::filter(Name == season) %>%
+    pull(JulianDay)
+
+  # Create date object
+  d <- lubridate::ymd(20010101)
+
+  # Set julian day and year
+  lubridate::yday(d) <- julian_day
+  lubridate::year(d) <- year
+
+  return(d)
 }
 
 # Function to generate Pandora paramter file template for single fire
@@ -621,15 +680,17 @@ generateParamaterTemplate <- function(placeHolderNames){
       NA
     },
     str_c("Fuel_Table ", fuelLookup),
-    str_c("Ign_DateTime 1/1/2000:13:00:00"),
-    str_c("Ign_Lon ", placeHolderNames$lon),
-    str_c("Ign_Lat ", placeHolderNames$lat),
+    str_c("Ign_File ", placeHolderNames$ignDate, ":13:00:00 ", placeHolderNames$ignFile),
+    #str_c("Ign_DateTime 1/6/2000:13:00:00"),
+    #str_c("Ign_Lon ", placeHolderNames$lon),
+    #str_c("Ign_Lat ", placeHolderNames$lat),
     str_c("WxStation_Lon ", weatherStationLocation[1]),
     str_c("WxStation_Lat ", weatherStationLocation[2]),
     str_c("WxStation_Elev ", weatherStationElevation),
     str_c("Wx_file ", placeHolderNames$weatherFile),
     str_c("Init_hour 13"),
     str_c("FFMC_Method 5"),
+    str_c("Out_GridType 0"),
     str_c("Threads ", numThreads),
     if (useWindGrid) {
       WindGridParameterStrings
@@ -638,7 +699,7 @@ generateParamaterTemplate <- function(placeHolderNames){
     },
     str_c("Greenup ", placeHolderNames$greenup),
     if (setGrassCuring) {
-      str_c("%Grass_Curing ", placeHolderNames$grassCuring)  # TODO: Set curing for values other than just 31, 32. Code for that:, " ", str_c(FuelType %>% filter(str_detect(Code, "O-1")) %>% pull(ID), collapse = " ")
+      str_c("Grass_Curing ", placeHolderNames$grassCuring, " ", str_c(FuelType %>% filter(str_detect(Code, "O-1")) %>% pull(ID), collapse = " "))
     } else {
       NA
     },
@@ -675,16 +736,20 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
 
   # Calculate values to fill placeholders in template
   weatherFile <- file.path(weatherFolder, str_c("Weather", UniqueBatchFireIndex, ".txt"))
+  ignFile <- file.path(ignitionFolder, str_c("Ignition", UniqueBatchFireIndex, ".shp"))
+
+  ignDate <- getSeasonMedianDate(season) %>%
+    lubridate::stamp("31/01/1999")() # dd/mm/yyyy is expected by Pandora
 
   greenupValue <-  GreenUp %>%
-    filter(Season %in% c(season, NA)) %>%
+    dplyr::filter(Season %in% c(season, NA)) %>%
     arrange(Season) %>% pull(GreenUp) %>%
     pluck(1) %>%
     as.numeric()
 
   if(setGrassCuring) {
     grassCuringValue <- Curing %>%
-      filter(Season %in% c(season, NA)) %>%
+      dplyr::filter(Season %in% c(season, NA)) %>%
       arrange(Season) %>%
       pull(Curing) %>%
       pluck(1)
@@ -707,9 +772,11 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
   # Replace placeholders in template
   parameterFileText <- parameterFileTemplate %>%
     str_replace_all(placeHolderNames$fileTag, fileTag) %>%
-    str_replace_all(placeHolderNames$lon, as.character(Lon)) %>%
-    str_replace_all(placeHolderNames$lat, as.character(Lat)) %>%
+    # str_replace_all(placeHolderNames$lon, as.character(Lon)) %>%
+    # str_replace_all(placeHolderNames$lat, as.character(Lat)) %>%
     str_replace_all(placeHolderNames$weatherFile, weatherFile) %>%
+    str_replace_all(placeHolderNames$ignDate, ignDate) %>%
+    str_replace_all(placeHolderNames$ignFile, ignFile) %>%
     str_replace_all(placeHolderNames$greenup, as.character(greenupValue)) %>%
     str_replace_all(placeHolderNames$grassCuring, as.character(grassCuringValue)) %>%
     str_replace_all(placeHolderNames$fuelLoad, as.character(fuelLoadValue)) %>%
@@ -795,12 +862,13 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
 
             # Rewrite as GeoTiff to output folder
             rast(inputComponentFileName) %>%
+              {crs(.) <- crs(fuelsRaster); .} %>%
               writeRaster(outputComponentFileName,
                 overwrite = T,
                 NAflag = -9999,
                 wopt = list(
                   filetype = "GTiff",
-                  datatype = "INT4S",
+                  datatype = "FLT4S",
                   gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
                 )
               )
