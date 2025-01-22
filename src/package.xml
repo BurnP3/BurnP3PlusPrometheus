@@ -171,7 +171,7 @@
 		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
 	</dataSheet>
 
-	<dataSheet name="OutputFireIntensityMap" displayName="Output Rate of Spread Map">
+	<dataSheet name="OutputFireIntensityMap" displayName="Output Fire Intensity Map">
 		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="Greater" formula1="0" format="d"/>
 		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
 		<column name="FireID" dataType="Integer"/>
