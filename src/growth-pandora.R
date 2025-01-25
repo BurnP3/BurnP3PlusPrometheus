@@ -1212,6 +1212,29 @@ if (OutputOptionsSpatial$BurnPerimeter) {
     dplyr::select(-Tag) %>%
     as.data.frame()
 
+  # Identify missing shapefiles
+  missing_shapefiles <- anti_join(OutputFireStatistic, OutputBurnPerimeter, by = c("Iteration", "FireID")) %>%
+    dplyr::select(Iteration, FireID) %>%
+    mutate(
+      Timestep = 0,
+      FileName = str_c(shapeOutputFolder, "/it", Iteration, ".fid", FireID, ".shp"))
+  
+  # Create an empty geometry with the right metadata to fill missing shapefiles
+  empty_geom <- fuelsRaster %>%
+    ext() %>%
+    vect() %>%
+    erase(.,.)
+
+  # Create empty geometries
+  missing_shapefiles$FileName %>%
+    walk(writeVector, x = empty_geom)
+  
+  # Append output table records for missing shapefiles and sort
+  OutputBurnPerimeter <-
+    bind_rows(OutputBurnPerimeter, missing_shapefiles) %>%
+    arrange(Iteration, FireID) %>%
+    as.data.frame()
+
   # Output if there are records to save
   if (!isDatasheetEmpty(OutputBurnPerimeter)) {
     saveDatasheet(myScenario, OutputBurnPerimeter, "burnP3Plus_OutputFirePerimeter", append = T)
