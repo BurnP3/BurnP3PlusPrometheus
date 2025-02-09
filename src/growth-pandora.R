@@ -622,7 +622,7 @@ generateWeatherFiles <- function(DeterministicBurnCondition){
 generateIgnitionFile <- function(Latitude, Longitude, UniqueBatchFireIndex, ...) {
   # Providing ignition location or a shapefile of points causes Pandora to simulate the fire with acceleration, which is not appropriate for these simulations
   # Instead, we provide a very small polygon that includes the centroid of the pixel to start the ignition in to simulate without acceleration
-  padding <- 3e-7
+  padding <- 3e-6
   x <- data.frame(
     lat = c(Latitude - padding, Latitude - padding, Latitude + padding, Latitude + padding),
     lon = c(Longitude - padding, Longitude + padding, Longitude + padding, Longitude - padding) 
