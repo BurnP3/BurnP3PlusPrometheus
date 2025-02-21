@@ -799,7 +799,7 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
 
 # Function to summarize individual burn grids by iteration
 generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireIDs, Seasons) {
-  # For iteration zero (fires for resampling), only save individual burn maps
+  # For iteration zero (fires for resampling), only save individual burn maps and secondary outputs
   if(Iteration == 0) {
     for(i in seq_along(UniqueFireIDs)){
       if(!is.na(UniqueFireIDs[i])){
@@ -813,6 +813,41 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
               wopt = list(filetype = "GTiff",
                     datatype = "INT4S",
                     gdal = c("COMPRESS=DEFLATE","ZLEVEL=9","PREDICTOR=2")))
+
+        # Save requested secondary outputs
+        fileTag <- str_c("it", Iteration, ".fid", FireIDs[i])
+        for (component in outputComponentsToKeep) {
+          inputComponentFileName <- str_c(gridOutputFolder, "/", fileTag, "_", lookup(component, outputComponentNames, outputComponentCodes), ".asc")
+          if (file.exists(inputComponentFileName)) {
+            # Generate output file name
+            outputComponentFileName <- file.path(secondaryOutputFolder, basename(inputComponentFileName) %>% str_replace("asc", "tif"))
+
+            # Rewrite as GeoTiff to output folder
+            rast(inputComponentFileName) %>%
+              {crs(.) <- crs(fuelsRaster); .} %>%
+              writeRaster(outputComponentFileName,
+                overwrite = T,
+                NAflag = -9999,
+                wopt = list(
+                  filetype = "GTiff",
+                  datatype = "FLT4S",
+                  gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
+                )
+              )
+
+            # Update corresponding table in SyncroSim
+            outputComponentTables[[component]] <<- rbind(
+              outputComponentTables[[component]],
+              data.frame(
+                Iteration = Iteration,
+                Timestep = FireIDs[i], # TODO: Separate out timestep and fire ID
+                FireID = FireIDs[i],
+                FileName = outputComponentFileName
+              )
+            )
+          }
+          unlink(inputComponentFileName)
+        }
       }
     }
     return()
