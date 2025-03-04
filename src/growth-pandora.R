@@ -209,7 +209,7 @@ if(isDatasheetEmpty(WeatherZoneTable))
 test.point <- vect(matrix(crds(fuelsRaster)[1,],ncol=2), crs = crs(fuelsRaster))
 # Ensure fuels crs can be converted to Lat / Long
 if(test.point %>% is.lonlat){stop("Incorrect coordinate system. Projected coordinate system required, please reproject your grids.")}
-tryCatch(test.point %>% project("epsg:4326"), error = function(e) stop("Error parsing provided Fuels map. Cannot calculate Latitude and Longitude from provided Fuels map, please check CRS."))
+tryCatch(test.point %>% terra::project("epsg:4326"), error = function(e) stop("Error parsing provided Fuels map. Cannot calculate Latitude and Longitude from provided Fuels map, please check CRS."))
 
 # Define function to check input raster for consistency
 checkSpatialInput <- function(x, name, checkProjection = T, warnOnly = F) {
@@ -1268,7 +1268,7 @@ if (OutputOptionsSpatial$BurnPerimeter) {
       FireID = str_extract(Tag, "fid\\d+") %>% str_sub(4) %>% as.integer(),
       Timestep = 0
     ) %>%
-    filter(Iteration %in% iterations) %>%
+    filter(Iteration %in% iterations | (Iteration == 0 & FireID %in% extraIgnitionIDs)) %>%
     dplyr::select(-Tag) %>%
     as.data.frame()
 
@@ -1282,13 +1282,15 @@ if (OutputOptionsSpatial$BurnPerimeter) {
   # Create an empty geometry with the right metadata to fill missing shapefiles
   empty_geom <- fuelsRaster %>%
     ext() %>%
-    as.polygons(crs = crs(.)) %>%
-    erase(.,.)
+    as.polygons() %>%
+    erase(.,.) %>%
+    st_as_sf() %>%
+    st_set_crs(crs(fuelsRaster))
 
   # Create empty geometries
   missing_shapefiles$FileName %>%
-    walk(writeVector, x = empty_geom)
-  
+    walk(st_write, obj = empty_geom, delete_layer = T)
+
   # Append output table records for missing shapefiles and sort
   OutputBurnPerimeter <-
     bind_rows(OutputBurnPerimeter, missing_shapefiles) %>%
