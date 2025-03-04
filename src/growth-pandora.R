@@ -1264,7 +1264,7 @@ if (OutputOptionsSpatial$BurnPerimeter) {
   # Create an empty geometry with the right metadata to fill missing shapefiles
   empty_geom <- fuelsRaster %>%
     ext() %>%
-    vect() %>%
+    as.polygons(crs = crs(.)) %>%
     erase(.,.)
 
   # Create empty geometries
