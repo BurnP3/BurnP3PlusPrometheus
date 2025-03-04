@@ -179,12 +179,25 @@ if (isDatasheetEmpty(Curing)) {
   saveDatasheet(myScenario, Curing, "burnP3Plus_Curing")
 }
 
-# Replace missing seasons with "All" to use default median date
-DeterministicIgnitionLocation <- DeterministicIgnitionLocation %>%
-  mutate(
-    Season = na_if(as.character(Season), ""),
-    Season = replace_na(Season, "All")
-  )
+# Fill missing season values
+
+# Define function to fill missing season values and save changes back to library
+fill_season <- function(datasheet, datasheet_name = "", update_library = F) {
+  datasheet <- datasheet %>%
+    mutate(
+      Season = if(!exists("Season", where = .)) NA_character_ else as.character(Season),
+      Season = replace_na(Season, "All"))
+
+  if (update_library)
+    saveDatasheet(myScenario, datasheet, datasheet_name)
+
+  return(datasheet)
+}
+
+DeterministicIgnitionLocation <- fill_season(DeterministicIgnitionLocation, "burnP3Plus_DeterministicIgnitionLocation", TRUE)
+GreenUp <- fill_season(GreenUp, "burnP3Plus_GreenUp", TRUE)
+Curing <- fill_season(Curing, "burnP3Plus_Curing", TRUE)
+# FuelLoad <- fill_season(FuelLoad, "burnP3Plus_FuelLoad", TRUE) # Currently disabled and hidden in UI
 
 if(isDatasheetEmpty(FireZoneTable))
   FireZoneTable <- data.frame(Name = "", ID = 0)
@@ -750,14 +763,17 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
     lubridate::stamp("31/01/1999")() # dd/mm/yyyy is expected by Pandora
 
   greenupValue <-  GreenUp %>%
-    dplyr::filter(Season %in% c(season, NA)) %>%
-    arrange(Season) %>% pull(GreenUp) %>%
+    dplyr::filter(Season %in% c(season, NA, "All")) %>%
+    mutate(Season = na_if(Season, "All")) %>% # Replace "All" season with NA so it sorts to end with `arrange`
+    arrange(Season) %>% 
+    pull(GreenUp) %>%
     pluck(1) %>%
     as.numeric()
 
   if(setGrassCuring) {
     grassCuringValue <- Curing %>%
-      dplyr::filter(Season %in% c(season, NA)) %>%
+      dplyr::filter(Season %in% c(season, NA, "All")) %>%
+      mutate(Season = na_if(Season, "All")) %>%
       arrange(Season) %>%
       pull(Curing) %>%
       pluck(1)
@@ -767,7 +783,8 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
 
   if(setFuelLoad) {
     fuelLoadValue <- FuelLoad %>%
-      filter(Season %in% c(season, NA)) %>%
+      filter(Season %in% c(season, NA, "All")) %>%
+      mutate(Season = na_if(Season, "All")) %>%
       arrange(Season) %>%
       pull(FileName) %>%
       pluck(1)
