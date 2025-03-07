@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.2.0" url="https://github.com/burnp3/burnp3plusprometheus" minSyncroSimVersion="3.1.0">
+<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.1.0" url="https://github.com/burnp3/burnp3plusprometheus">
 
-	<builtFor package = "burnP3Plus" version = "2.3.0"/>
+	<builtFor package = "burnP3Plus" version = "2.2.0"/>
 
 	<!--Project Datasheets-->
 
@@ -153,72 +153,6 @@
 
 	<!--Scenario Datasheets-->
 
-	<dataSheet name="OutputOptionSpatial" displayName="Secondary Outputs" isSingleRow="True">
-		<column name="RateOfSpread" dataType="Boolean" displayName="Rate of Spread Map"/>
-		<column name="FireIntensity" dataType="Boolean" displayName="Fire Intensity Map"/>
-		<column name="SpreadDirection" dataType="Boolean" displayName="Spread Direction Map"/>
-		<column name="SurfaceFuelConsumption" dataType="Boolean" displayName="Surface Fuel Consumption Map"/>
-		<column name="CrownFractionBurned" dataType="Boolean" displayName="Crown Fraction Burned Map"/>
-		<column name="CrownFractionConsumed" dataType="Boolean" displayName="Crown Fraction Consumed Map"/>
-		<column name="TotalFuelConsumption" dataType="Boolean" displayName="Total Fuel Consumption Map"/>
-	</dataSheet>
-
-	<dataSheet name="OutputRateOfSpreadMap" displayName="Output Rate of Spread Map">
-		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d"/>
-		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-		<column name="FireID" dataType="Integer"/>
-		<column name="FileName" displayName="Rate of Spread Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="RateOfSpread"/>
-		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-	</dataSheet>
-
-	<dataSheet name="OutputFireIntensityMap" displayName="Output Fire Intensity Map">
-		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d"/>
-		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-		<column name="FireID" dataType="Integer"/>
-		<column name="FileName" displayName="Fire Intensity Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="FireIntensity"/>
-		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-	</dataSheet>
-
-	<dataSheet name="OutputSpreadDirectionMap" displayName="Output Spread Direction Map">
-		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d"/>
-		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-		<column name="FireID" dataType="Integer"/>
-		<column name="FileName" displayName="Spread Direction Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="SpreadDirection"/>
-		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-	</dataSheet>
-
-	<dataSheet name="OutputSurfaceFuelConsumptionMap" displayName="Output Surface Fuel Consumption Map">
-		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d"/>
-		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-		<column name="FireID" dataType="Integer"/>
-		<column name="FileName" displayName="Surface Fuel Consumption Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="SurfaceFuelConsumption"/>
-		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-	</dataSheet>
-
-	<dataSheet name="OutputCrownFractionBurnedMap" displayName="Output Crown Fraction Burned Map">
-		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d"/>
-		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-		<column name="FireID" dataType="Integer"/>
-		<column name="FileName" displayName="Crown Fraction Burned Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="CrownFractionBurned"/>
-		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-	</dataSheet>
-
-	<dataSheet name="OutputCrownFractionConsumedMap" displayName="Output Crown Fraction Consumed Map">
-		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d"/>
-		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-		<column name="FireID" dataType="Integer"/>
-		<column name="FileName" displayName="Crown Fraction Consumed Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="CrownFractionConsumed"/>
-		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-	</dataSheet>
-
-	<dataSheet name="OutputTotalFuelConsumptionMap" displayName="Output Total Fuel Consumption Map">
-		<column name="Iteration" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d"/>
-		<column name="Timestep" dataType="Integer" validationType="WholeNumber" validationCondition="GreaterEqual" formula1="0" format="d" isVisible="False"/>
-		<column name="FireID" dataType="Integer"/>
-		<column name="FileName" displayName="Total Fuel Consumption Map" dataType="String" allowDbNull="False" isExternalFile="True" isRaster="True" bandColumn="Band" filenameCode="TotalFuelConsumption"/>
-		<column name="Band" displayName="Band" dataType="Integer" allowDbNull="True" isOptional="True"/>
-	</dataSheet>
-
 	<!--Transformers-->
 
 	<!--Prometheus Fire Growth Transformer-->
@@ -236,6 +170,7 @@
 			<dataSheet name="burnP3Plus_LandscapeRasters" type="Input"/>
 			<dataSheet name="burnP3Plus_OutputOption" type="Input"/>
 			<dataSheet name="burnP3Plus_OutputOptionSpatial" type="Input"/>
+			<dataSheet name="burnP3Plus_OutputOptionFBPSpatial" type="Input"/>
 			<dataSheet name="burnP3Plus_DeterministicIgnitionCount" type="Input"/>
 			<dataSheet name="burnP3Plus_DeterministicIgnitionLocation" type="Input"/>
 			<dataSheet name="burnP3Plus_DeterministicBurnCondition" type="Input"/>
@@ -247,61 +182,22 @@
 			<dataSheet name="burnP3Plus_OutputBurnMap" type="Output"/>
 			<dataSheet name="burnP3Plus_OutputFirePerimeter" type="Output"/>
 			<dataSheet name="burnP3Plus_OutputAllPerim" type="Output"/>
-			<dataSheet name="OutputOptionSpatial" type="Input"/>
-			<dataSheet name="OutputRateOfSpreadMap" type="Output"/>
-			<dataSheet name="OutputFireIntensityMap" type="Output"/>
-			<dataSheet name="OutputSpreadDirectionMap" type="Output"/>
-			<dataSheet name="OutputSurfaceFuelConsumptionMap" type="Output"/>
-			<dataSheet name="OutputCrownFractionBurnedMap" type="Output"/>
-			<dataSheet name="OutputCrownFractionConsumedMap" type="Output"/>
-			<dataSheet name="OutputTotalFuelConsumptionMap" type="Output"/>
+			<dataSheet name="burnP3Plus_OutputRateOfSpreadMap" type="Output"/>
+			<dataSheet name="burnP3Plus_OutputFireIntensityMap" type="Output"/>
+			<dataSheet name="burnP3Plus_OutputSpreadDirectionMap" type="Output"/>
+			<dataSheet name="burnP3Plus_OutputSurfaceFuelConsumptionMap" type="Output"/>
+			<dataSheet name="burnP3Plus_OutputCrownFractionBurnedMap" type="Output"/>
+			<dataSheet name="burnP3Plus_OutputCrownFractionConsumedMap" type="Output"/>
+			<dataSheet name="burnP3Plus_OutputTotalFuelConsumptionMap" type="Output"/>
 	</transformer>
 
-	<!--Export Transformers-->
-	<transformer name="RateOfSpreadMap" displayName="Rate of Spread Map by Iteration and Fire ID" isExport="True" dataSheet="OutputRateOfSpreadMap" column="FileName" isFolderExport="True"/>
-	<transformer name="FireIntensityMap" displayName="Fire Intensity Map by Iteration and Fire ID" isExport="True" dataSheet="OutputFireIntensityMap" column="FileName" isFolderExport="True"/>
-	<transformer name="SpreadDirectionMap" displayName="Spread Direction Map by Iteration and Fire ID" isExport="True" dataSheet="OutputSpreadDirectionMap" column="FileName" isFolderExport="True"/>
-	<transformer name="SurfaceFuelConsumptionMap" displayName="Surface Fuel Consumption Map by Iteration and Fire ID" isExport="True" dataSheet="OutputSurfaceFuelConsumptionMap" column="FileName" isFolderExport="True"/>
-	<transformer name="CrownFractionBurnedMap" displayName="Crown Fraction Burned Map by Iteration and Fire ID" isExport="True" dataSheet="OutputCrownFractionBurnedMap" column="FileName" isFolderExport="True"/>
-	<transformer name="CrownFractionConsumedMap" displayName="Crown Fraction Consumed Map by Iteration and Fire ID" isExport="True" dataSheet="OutputCrownFractionConsumedMap" column="FileName" isFolderExport="True"/>
-	<transformer name="TotalFuelConsumptionMap" displayName="Total Fuel Consumption Map by Iteration and Fire ID" isExport="True" dataSheet="OutputTotalFuelConsumptionMap" column="FileName" isFolderExport="True"/>
-
 	<!--Layouts-->
-
-	<!--Results Transformer Layout-->
-	<layout type="Export">
-		<group name="Export" displayName="Prometheus">
-			<item name="RateOfSpreadMap" displayName="Rate of Spread Maps"/>
-			<item name="FireIntensityMap" displayName="Fire Intensity Maps"/>
-			<item name="SpreadDirectionMap" displayName="Spread Direction Maps"/>
-			<item name="SurfaceFuelConsumptionMap" displayName="Surface Fuel Consumption Maps"/>
-			<item name="CrownFractionBurnedMap" displayName="Crown Fraction Burned Maps"/>
-			<item name="CrownFractionConsumedMap" displayName="Crown Fraction Consumed Maps"/>
-			<item name="TotalFuelConsumptionMap" displayName="Total Fuel Consumption Maps"/>
-		</group>
-	</layout>
-
-	<!--Map Layout-->
-	<layout type="Map">
-		<group name="PrometheusSecondaryOutputs" displayName="Prometheus Secondary Outputs">
-			<item name="ros" displayName="Rate of Spread" dataSheet="OutputRateOfSpreadMap" column="FileName"/>
-			<item name="fi" displayName="Fire Intensity" dataSheet="OutputFireIntensityMap" column="FileName"/>
-			<item name="sd" displayName="Spread Direction" dataSheet="OutputSpreadDirectionMap" column="FileName"/>
-			<item name="sfc" displayName="Surface Fuel Consumption" dataSheet="OutputSurfaceFuelConsumptionMap" column="FileName"/>
-			<item name="cfb" displayName="Crown Fraction Burned" dataSheet="OutputCrownFractionBurnedMap" column="FileName"/>
-			<item name="cfc" displayName="Crown Fraction Consumed" dataSheet="OutputCrownFractionConsumedMap" column="FileName"/>
-			<item name="tfc" displayName="Total Fuel Consumption" dataSheet="OutputTotalFuelConsumptionMap" column="FileName"/>
-		</group>
-	</layout>
 
 	<!--Project Layout-->
 	<layout type="Project">
 		<item name="FuelCodeCrosswalk" displayName="Prometheus Crosswalk"/>
 	</layout>
 
-	<!--Scenario Layout-->
-	<layout type="Scenario">
-		<item name="OutputOptionSpatial" displayName="Prometheus" showIf="inPipeline"/>
-	</layout>
+	<updateProvider className="SyncroSim.Core.XMLUpdateProvider" classAssembly="SyncroSim.Core"/>
 
 </package>
