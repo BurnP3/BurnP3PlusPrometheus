@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.0.3" url="https://github.com/burnp3/burnp3plusprometheus">
+<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.0.4" url="https://github.com/burnp3/burnp3plusprometheus">
 
-	<builtFor package = "burnP3Plus" version = "2.1.1"/>
+	<builtFor package = "burnP3Plus" version = "2.1.3"/>
 
 	<!--Project Datasheets-->
 
@@ -240,9 +240,9 @@
 			<dataSheet name="burnP3Plus_DeterministicIgnitionLocation" type="Input"/>
 			<dataSheet name="burnP3Plus_DeterministicBurnCondition" type="Input"/>
 			<dataSheet name="burnP3Plus_WindGrid" type="Input"/>
-			<dataSheet name="burnP3Plus_GreenUp" type="Input"/>
-			<dataSheet name="burnP3Plus_Curing" type="Input"/>
-			<!-- <dataSheet name="burnP3Plus_FuelLoad" type="Input"/> -->
+			<dataSheet name="burnP3Plus_GreenUp" type="Both"/>
+			<dataSheet name="burnP3Plus_Curing" type="Both"/>
+			<!-- <dataSheet name="burnP3Plus_FuelLoad" type="Both"/> -->
 			<dataSheet name="burnP3Plus_OutputFireStatistic" type="Output"/>
 			<dataSheet name="burnP3Plus_OutputBurnMap" type="Output"/>
 			<dataSheet name="burnP3Plus_OutputFirePerimeter" type="Output"/>
