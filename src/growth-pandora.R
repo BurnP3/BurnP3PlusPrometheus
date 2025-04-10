@@ -48,6 +48,10 @@ if (.Platform$OS.type == "unix") {
 
 prometheusLocation <- Sys.which("prometheus.exe")
 if (prometheusLocation == "") {
+  prometheusLocation <- shortPathName("C:/Program Files/Prometheus/Prometheus.exe")
+}
+
+if (!file.exists(prometheusLocation)) {
   stop("Could not find the Prometheus installation location. Please check that Prometheus is installed correctly.")
 }
 
