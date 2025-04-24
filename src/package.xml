@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.1.1" url="https://github.com/burnp3/burnp3plusprometheus">
+<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.2.0" url="https://github.com/burnp3/burnp3plusprometheus" minSyncroSimVersion="3.1.0">
 
-	<builtFor package = "burnP3Plus" version = "2.2.1"/>
+	<builtFor package = "burnP3Plus" version = "2.3.0"/>
 
 	<!--Project Datasheets-->
 
@@ -230,7 +230,7 @@
 		programArguments="growth-pandora.R" 
 		configurationSheet="burnP3Plus_RunControl" 
 		condaEnv="burnP3Plus.yml" 
-		condaEnvVersion="1">
+		condaEnvVersion="2">
 			<dataSheet name="burnP3Plus_RunControl" type="Input"/>
 			<dataSheet name="burnP3Plus_FireResampleOption" type="Input"/>
 			<dataSheet name="burnP3Plus_LandscapeRasters" type="Input"/>
