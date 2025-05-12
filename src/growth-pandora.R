@@ -1344,6 +1344,7 @@ if (OutputOptionsSpatial$BurnPerimeter != "No") {
         BurnDay = shapefiles$burn_day[i],
         geometry = geometry,
         .keep = "none") %>%
+      st_buffer(0) %>% # Prevent specific invalidity case that st_make_valid doesn't catch
       st_make_valid() %>%
       # Remove burn day info if not saving daily perimeters
       {if (OutputOptionsSpatial$BurnPerimeter != "Daily") dplyr::select(., -BurnDay) else .}
