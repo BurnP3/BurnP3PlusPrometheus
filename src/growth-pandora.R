@@ -897,38 +897,46 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
 
         # Save requested secondary outputs
         fileTag <- str_c("it", Iteration, ".fid", FireIDs[i])
-        for (component in outputComponentsToKeep) {
-          inputComponentFileName <- str_c(gridOutputFolder, "/", fileTag, "_", lookup(component, outputComponentNames, outputComponentCodes), ".asc")
-          if (file.exists(inputComponentFileName)) {
-            # Generate output file name
-            outputComponentFileName <- file.path(secondaryOutputFolder, basename(inputComponentFileName) %>% str_replace("asc", "tif"))
+        if (keepSecondaries) {
+          # Set up mask for setting background to NA
+          componentMask <- rast(fuelsRaster, vals = burnArea) %>% 
+            mask(fuelsRaster) %>%
+            classify(matrix(c(0, NA), ncol = 2))
 
-            # Rewrite as GeoTiff to output folder
-            rast(inputComponentFileName) %>%
-              {crs(.) <- crs(fuelsRaster); .} %>%
-              classify(matrix(c(0, NA), ncol = 2)) %>% # Use a background of NA
-              writeRaster(outputComponentFileName,
-                overwrite = T,
-                NAflag = -9999,
-                wopt = list(
-                  filetype = "GTiff",
-                  datatype = "FLT4S",
-                  gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
+          for (component in outputComponentsToKeep) {
+            inputComponentFileName <- str_c(gridOutputFolder, "/", fileTag, "_", lookup(component, outputComponentNames, outputComponentCodes), ".asc")
+            if (file.exists(inputComponentFileName)) {
+              # Generate output file name
+              outputComponentFileName <- file.path(secondaryOutputFolder, basename(inputComponentFileName) %>% str_replace("asc", "tif"))
+
+              # Rewrite as GeoTiff to output folder
+              rast(inputComponentFileName) %>%
+                {crs(.) <- crs(fuelsRaster); .} %>%
+                mask(componentMask) %>%
+                {if (component == "SpreadDirection") (((pi/2 - .) * (180 / pi) + 360) %% 360) else .} %>% # Convert spread direction maps from radians ccw from x, to degrees cw from North. Note that 360 is added since some versions of terra miscalculate `%%` on negative numbers
+                writeRaster(outputComponentFileName,
+                  overwrite = T,
+                  NAflag = -9999,
+                  wopt = list(
+                    filetype = "GTiff",
+                    datatype = "FLT4S",
+                    gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
+                  )
+                )
+
+              # Update corresponding table in SyncroSim
+              outputComponentTables[[component]] <<- rbind(
+                outputComponentTables[[component]],
+                data.frame(
+                  Iteration = Iteration,
+                  Timestep = FireIDs[i], # TODO: Separate out timestep and fire ID
+                  FireID = FireIDs[i],
+                  FileName = outputComponentFileName
                 )
               )
-
-            # Update corresponding table in SyncroSim
-            outputComponentTables[[component]] <<- rbind(
-              outputComponentTables[[component]],
-              data.frame(
-                Iteration = Iteration,
-                Timestep = FireIDs[i], # TODO: Separate out timestep and fire ID
-                FireID = FireIDs[i],
-                FileName = outputComponentFileName
-              )
-            )
+            }
+            unlink(inputComponentFileName)
           }
-          unlink(inputComponentFileName)
         }
       }
     }
@@ -978,38 +986,46 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
 
         # Save requested secondary outputs
         fileTag <- str_c("it", Iteration, ".fid", FireIDs[i])
-        for (component in outputComponentsToKeep) {
-          inputComponentFileName <- str_c(gridOutputFolder, "/", fileTag, "_", lookup(component, outputComponentNames, outputComponentCodes), ".asc")
-          if (file.exists(inputComponentFileName)) {
-            # Generate output file name
-            outputComponentFileName <- file.path(secondaryOutputFolder, basename(inputComponentFileName) %>% str_replace("asc", "tif"))
+        if (keepSecondaries) {
+          # Set up mask for setting background to NA
+          componentMask <- rast(fuelsRaster, vals = burnArea) %>% 
+            mask(fuelsRaster) %>%
+            classify(matrix(c(0, NA), ncol = 2))
 
-            # Rewrite as GeoTiff to output folder
-            rast(inputComponentFileName) %>%
-              {crs(.) <- crs(fuelsRaster); .} %>%
-              classify(matrix(c(0, NA), ncol = 2)) %>% # Use a background of NA
-              writeRaster(outputComponentFileName,
-                overwrite = T,
-                NAflag = -9999,
-                wopt = list(
-                  filetype = "GTiff",
-                  datatype = "FLT4S",
-                  gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
+          for (component in outputComponentsToKeep) {
+            inputComponentFileName <- str_c(gridOutputFolder, "/", fileTag, "_", lookup(component, outputComponentNames, outputComponentCodes), ".asc")
+            if (file.exists(inputComponentFileName)) {
+              # Generate output file name
+              outputComponentFileName <- file.path(secondaryOutputFolder, basename(inputComponentFileName) %>% str_replace("asc", "tif"))
+
+              # Rewrite as GeoTiff to output folder
+              rast(inputComponentFileName) %>%
+                {crs(.) <- crs(fuelsRaster); .} %>%
+                mask(componentMask) %>%
+                {if (component == "SpreadDirection") (((pi/2 - .) * (180 / pi) + 360) %% 360) else .} %>% # Convert spread direction maps from radians ccw from x, to degrees cw from North. Note that 360 is added since some versions of terra miscalculate `%%` on negative numbers
+                writeRaster(outputComponentFileName,
+                  overwrite = T,
+                  NAflag = -9999,
+                  wopt = list(
+                    filetype = "GTiff",
+                    datatype = "FLT4S",
+                    gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
+                  )
+                )
+
+              # Update corresponding table in SyncroSim
+              outputComponentTables[[component]] <<- rbind(
+                outputComponentTables[[component]],
+                data.frame(
+                  Iteration = Iteration,
+                  Timestep = FireIDs[i], # TODO: Separate out timestep and fire ID
+                  FireID = FireIDs[i],
+                  FileName = outputComponentFileName
                 )
               )
-
-            # Update corresponding table in SyncroSim
-            outputComponentTables[[component]] <<- rbind(
-              outputComponentTables[[component]],
-              data.frame(
-                Iteration = Iteration,
-                Timestep = FireIDs[i], # TODO: Separate out timestep and fire ID
-                FireID = FireIDs[i],
-                FileName = outputComponentFileName
-              )
-            )
+            }
+            unlink(inputComponentFileName)
           }
-          unlink(inputComponentFileName)
         }
       }
     }
