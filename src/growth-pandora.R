@@ -504,7 +504,7 @@ getFinalRawOutputGridPaths <- function(gridOutputFolder, fileTags) {
 
 # Get burn area from output asc
 getBurnArea <- function(inputFile) {
-  if (file.exists(inputFile)) {
+  if (!is.na(inputFile) && file.exists(inputFile)) {
   fread(inputFile, header = F, skip = 6, sep = " ") %>%
     as.matrix() %>%
     sum %>%
@@ -582,6 +582,9 @@ runPandora <- function() {
   pandoraExe <- ssimEnvironment()$PackageDirectory %>%
     str_replace_all("\\\\", "/") %>%
     str_c("/pandora.exe")
+  
+  if (!file.exists(pandoraExe))
+    stop("Could not find the Pandora executable within the BP3+ Prometheus package folder. Please reinstall the package.")
   
   str_c("\"", pandoraExe, "\"", " /silent /nowin ", parameterFile) %>%
     shell()
@@ -1326,7 +1329,7 @@ if (saveBurnMaps) {
   # Output secondary outputs if present
   if (length(outputComponentsToKeep) > 0) {
     for (i in seq_along(outputComponentTables)) {
-      if (nrow(outputComponentTables[[i]]) > 0) {
+      if (!isDatasheetEmpty(outputComponentTables[[i]])) {
         saveDatasheet(myScenario, outputComponentTables[[i]], str_c("burnP3Plus_Output", outputComponentsToKeep[i], "Map"))
       }
     }
@@ -1352,43 +1355,45 @@ if (OutputOptionsSpatial$BurnPerimeter != "No") {
   shapefiles_present <- shapefiles %>%
     dplyr::select(Iteration = iteration, FireID = fire_id, BurnDay = burn_day)
 
-  for (i in seq(nrow(shapefiles))) {
-    perimeter <- st_read(shapefiles$path[i], quiet = TRUE) %>%
-      mutate(
-        Iteration = shapefiles$iteration[i],
-        FireID = shapefiles$fire_id[i],
-        BurnDay = shapefiles$burn_day[i],
-        geometry = geometry,
-        .keep = "none") %>%
-      st_buffer(0) %>% # Prevent specific invalidity case that st_make_valid doesn't catch
-      st_make_valid() %>%
-      # Remove burn day info if not saving daily perimeters
-      {if (OutputOptionsSpatial$BurnPerimeter != "Daily") dplyr::select(., -BurnDay) else .}
+  if(!isDatasheetEmpty(shapefiles)) {
+    for (i in seq(nrow(shapefiles))) {
+      perimeter <- st_read(shapefiles$path[i], quiet = TRUE) %>%
+        mutate(
+          Iteration = shapefiles$iteration[i],
+          FireID = shapefiles$fire_id[i],
+          BurnDay = shapefiles$burn_day[i],
+          geometry = geometry,
+          .keep = "none") %>%
+        st_buffer(0) %>% # Prevent specific invalidity case that st_make_valid doesn't catch
+        st_make_valid() %>%
+        # Remove burn day info if not saving daily perimeters
+        {if (OutputOptionsSpatial$BurnPerimeter != "Daily") dplyr::select(., -BurnDay) else .}
 
-    # For daily burn perimeters, we also need to track and subtract the previous day's burn
-    if (OutputOptionsSpatial$BurnPerimeter == "Daily") {
-      if (perimeter$BurnDay == 1) {
-        burn_yesterday <- perimeter
-      } else {
-        # Calculate difference
-        st_agr(perimeter) = "constant"
-        burn_today <- perimeter %>%
-          st_difference(st_geometry(burn_yesterday))
-        
-        # Update placeholders
-        burn_yesterday <- perimeter
-        perimeter <- burn_today
+      # For daily burn perimeters, we also need to track and subtract the previous day's burn
+      if (OutputOptionsSpatial$BurnPerimeter == "Daily") {
+        if (perimeter$BurnDay == 1) {
+          burn_yesterday <- perimeter
+        } else {
+          # Calculate difference
+          st_agr(perimeter) = "constant"
+          burn_today <- perimeter %>%
+            st_difference(st_geometry(burn_yesterday))
+
+          # Update placeholders
+          burn_yesterday <- perimeter
+          perimeter <- burn_today
+        }
       }
-    }
 
-    # Save perimeter to geopackage
-    perimeter %>%
-      st_cast("MULTIPOLYGON") %>%
-      st_write(
-        dsn = geopackage_path,
-        layer = geopackage_layer_name,
-        quiet = TRUE,
-        append = TRUE)
+      # Save perimeter to geopackage
+      perimeter %>%
+        st_cast("MULTIPOLYGON") %>%
+        st_write(
+          dsn = geopackage_path,
+          layer = geopackage_layer_name,
+          quiet = TRUE,
+          append = TRUE)
+    }
   }
 
   # Identify shapefile requested
@@ -1440,7 +1445,8 @@ if (OutputOptionsSpatial$BurnPerimeter != "No") {
     ) %>%
     as.data.frame()
 
-  saveDatasheet(myScenario, OutputFirePerimeter, "burnP3Plus_OutputFirePerimeter")
+  if (!isDatasheetEmpty(OutputFirePerimeter))
+    saveDatasheet(myScenario, OutputFirePerimeter, "burnP3Plus_OutputFirePerimeter")
 
   updateRunLog("Finished collecting burn perimeters in ", updateBreakpoint())
 }
