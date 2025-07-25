@@ -887,58 +887,60 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
   if(Iteration == 0) {
     for(i in seq_along(UniqueFireIDs)){
       if(!is.na(UniqueFireIDs[i])){
-        burnArea <- as.matrix(fread(burnGrids[UniqueFireIDs[i]], header = F, skip = 6, sep = " "))
+        if(!is.na(burnGrids[UniqueFireIDs[i]]) && file.exists(burnGrids[UniqueFireIDs[i]])) {
+          burnArea <- as.matrix(fread(burnGrids[UniqueFireIDs[i]], header = F, skip = 6, sep = " "))
 
-        rast(fuelsRaster, vals = burnArea) %>% 
-          mask(fuelsRaster) %>%
-          writeRaster(str_c(allPerimOutputFolder, "/it", Iteration,"_fire_", FireIDs[i], ".tif"), 
-              overwrite = T,
-              NAflag = -9999,
-              wopt = list(filetype = "GTiff",
-                    datatype = "INT4S",
-                    gdal = c("COMPRESS=DEFLATE","ZLEVEL=9","PREDICTOR=2")))
-
-        # Save requested secondary outputs
-        fileTag <- str_c("it", Iteration, ".fid", FireIDs[i])
-        if (keepSecondaries) {
-          # Set up mask for setting background to NA
-          componentMask <- rast(fuelsRaster, vals = burnArea) %>% 
+          rast(fuelsRaster, vals = burnArea) %>% 
             mask(fuelsRaster) %>%
-            classify(matrix(c(0, NA), ncol = 2))
+            writeRaster(str_c(allPerimOutputFolder, "/it", Iteration,"_fire_", FireIDs[i], ".tif"), 
+                overwrite = T,
+                NAflag = -9999,
+                wopt = list(filetype = "GTiff",
+                      datatype = "INT4S",
+                      gdal = c("COMPRESS=DEFLATE","ZLEVEL=9","PREDICTOR=2")))
 
-          for (component in outputComponentsToKeep) {
-            inputComponentFileName <- str_c(gridOutputFolder, "/", fileTag, "_", lookup(component, outputComponentNames, outputComponentCodes), ".asc")
-            if (file.exists(inputComponentFileName)) {
-              # Generate output file name
-              outputComponentFileName <- file.path(secondaryOutputFolder, basename(inputComponentFileName) %>% str_replace("asc", "tif"))
+          # Save requested secondary outputs
+          fileTag <- str_c("it", Iteration, ".fid", FireIDs[i])
+          if (keepSecondaries) {
+            # Set up mask for setting background to NA
+            componentMask <- rast(fuelsRaster, vals = burnArea) %>% 
+              mask(fuelsRaster) %>%
+              classify(matrix(c(0, NA), ncol = 2))
 
-              # Rewrite as GeoTiff to output folder
-              rast(inputComponentFileName) %>%
-                {crs(.) <- crs(fuelsRaster); .} %>%
-                mask(componentMask) %>%
-                {if (component == "SpreadDirection") (((pi/2 - .) * (180 / pi) + 360) %% 360) else .} %>% # Convert spread direction maps from radians ccw from x, to degrees cw from North. Note that 360 is added since some versions of terra miscalculate `%%` on negative numbers
-                writeRaster(outputComponentFileName,
-                  overwrite = T,
-                  NAflag = -9999,
-                  wopt = list(
-                    filetype = "GTiff",
-                    datatype = "FLT4S",
-                    gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
+            for (component in outputComponentsToKeep) {
+              inputComponentFileName <- str_c(gridOutputFolder, "/", fileTag, "_", lookup(component, outputComponentNames, outputComponentCodes), ".asc")
+              if (file.exists(inputComponentFileName)) {
+                # Generate output file name
+                outputComponentFileName <- file.path(secondaryOutputFolder, basename(inputComponentFileName) %>% str_replace("asc", "tif"))
+
+                # Rewrite as GeoTiff to output folder
+                rast(inputComponentFileName) %>%
+                  {crs(.) <- crs(fuelsRaster); .} %>%
+                  mask(componentMask) %>%
+                  {if (component == "SpreadDirection") (((pi/2 - .) * (180 / pi) + 360) %% 360) else .} %>% # Convert spread direction maps from radians ccw from x, to degrees cw from North. Note that 360 is added since some versions of terra miscalculate `%%` on negative numbers
+                  writeRaster(outputComponentFileName,
+                    overwrite = T,
+                    NAflag = -9999,
+                    wopt = list(
+                      filetype = "GTiff",
+                      datatype = "FLT4S",
+                      gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
+                    )
+                  )
+
+                # Update corresponding table in SyncroSim
+                outputComponentTables[[component]] <<- rbind(
+                  outputComponentTables[[component]],
+                  data.frame(
+                    Iteration = Iteration,
+                    Timestep = FireIDs[i], # TODO: Separate out timestep and fire ID
+                    FireID = FireIDs[i],
+                    FileName = outputComponentFileName
                   )
                 )
-
-              # Update corresponding table in SyncroSim
-              outputComponentTables[[component]] <<- rbind(
-                outputComponentTables[[component]],
-                data.frame(
-                  Iteration = Iteration,
-                  Timestep = FireIDs[i], # TODO: Separate out timestep and fire ID
-                  FireID = FireIDs[i],
-                  FileName = outputComponentFileName
-                )
-              )
+              }
+              unlink(inputComponentFileName)
             }
-            unlink(inputComponentFileName)
           }
         }
       }
@@ -963,7 +965,7 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
   for(i in seq_along(UniqueFireIDs)){
     if(!is.na(UniqueFireIDs[i])){
       # Pandora occassionally doesn't produce an output. Possibly when there is truly no burn?
-      if(file.exists(burnGrids[UniqueFireIDs[i]])) {
+      if(!is.na(burnGrids[UniqueFireIDs[i]]) && file.exists(burnGrids[UniqueFireIDs[i]])) {
         # Read and add in the current burn map to the accumulator
         burnArea <- as.matrix(fread(burnGrids[UniqueFireIDs[i]], header = F, skip = 6, sep = " "))
         accumulator <- accumulator + burnArea
