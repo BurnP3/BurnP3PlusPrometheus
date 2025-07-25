@@ -1078,6 +1078,12 @@ crs(fuelsRaster) %>%
 
 # Reformat fuel lookup table
 FuelType %>%
+  bind_rows(
+    # Insert a non-fuel record to start of lookup
+    # - workaround for curing parsing issue in Pandora
+    tibble(ID = -1, Color = "0,0,0,0", Name = "Non-fuel", Code = "Non-fuel"),
+    .
+  ) %>%
   transmute(
     grid_value = ID,
     export_value = ID,
