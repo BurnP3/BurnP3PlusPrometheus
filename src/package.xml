@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.3.1" url="https://github.com/burnp3/burnp3plusprometheus">
+<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.4.0" url="https://github.com/burnp3/burnp3plusprometheus">
 
-	<builtFor package = "burnP3Plus" version = "2.4.1"/>
+	<builtFor package = "burnP3Plus" version = "2.5.0"/>
 
 	<!--Project Datasheets-->
 
@@ -164,7 +164,7 @@
 		programArguments="growth-pandora.R" 
 		configurationSheet="burnP3Plus_RunControl" 
 		condaEnv="burnP3Plus.yml" 
-		condaEnvVersion="2">
+		condaEnvVersion="3">
 			<dataSheet name="burnP3Plus_RunControl" type="Input"/>
 			<dataSheet name="burnP3Plus_FireResampleOption" type="Input"/>
 			<dataSheet name="burnP3Plus_LandscapeRasters" type="Input"/>
@@ -182,6 +182,8 @@
 			<dataSheet name="burnP3Plus_OutputBurnMap" type="Output"/>
 			<dataSheet name="burnP3Plus_OutputFirePerimeter" type="Output"/>
 			<dataSheet name="burnP3Plus_OutputAllPerim" type="Output"/>
+		  <dataSheet name="burnP3Plus_OutputAllPerimTabular" type="Both"/>
+		  <dataSheet name="burnP3Plus_OutputFBPTabular" type="Both"/>
 			<dataSheet name="burnP3Plus_OutputRateOfSpreadMap" type="Output"/>
 			<dataSheet name="burnP3Plus_OutputFireIntensityMap" type="Output"/>
 			<dataSheet name="burnP3Plus_OutputSpreadDirectionMap" type="Output"/>
