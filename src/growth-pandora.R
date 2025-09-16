@@ -10,6 +10,7 @@ suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(terra))
 suppressPackageStartupMessages(library(sf))
 suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(arrow))
 
 checkPackageVersion <- function(packageString, minimumVersion){
   result <- compareVersion(as.character(packageVersion(packageString)), minimumVersion)
@@ -88,13 +89,14 @@ FuelType <- datasheet(myScenario, "burnP3Plus_FuelType")
 FuelTypeCrosswalk <- datasheet(myScenario, "burnP3PlusPrometheus_FuelCodeCrosswalk", lookupsAsFactors = F, optional = T)
 ValidFuelCodes <- datasheet(myScenario, "burnP3PlusPrometheus_FuelCode") %>% pull()
 SeasonTable <- datasheet(myScenario, "burnP3Plus_Season", lookupsAsFactors = F, optional = T, includeKey = T, returnInvisible = T)
+FBPVariableTable <- datasheet(myScenario, "burnP3Plus_FBPOutputVariable", lookupsAsFactors = F, optional = T, returnInvisible = T)
 WindGrid <- datasheet(myScenario, "burnP3Plus_WindGrid", lookupsAsFactors = F, optional = T)
 GreenUp <- datasheet(myScenario, "burnP3Plus_GreenUp", lookupsAsFactors = F, optional = T)
 Curing <- datasheet(myScenario, "burnP3Plus_Curing", lookupsAsFactors = F, optional = T)
 FuelLoad <- datasheet(myScenario, "burnP3Plus_FuelLoad", lookupsAsFactors = F, optional = T)
 OutputOptions <- datasheet(myScenario, "burnP3Plus_OutputOption", optional = T)
-OutputOptionsSpatial <- datasheet(myScenario, "burnP3Plus_OutputOptionSpatial", optional = T)
-OutputOptionsSpatialPrometheus <- datasheet(myScenario, "burnP3PlusPrometheus_OutputOptionSpatial", optional = T)
+OutputOptionsSpatial <- datasheet(myScenario, "burnP3Plus_OutputOptionSpatial", optional = T) %>% mutate(BurnPerimeter = as.character(BurnPerimeter))
+OutputOptionFBPSpatial <- datasheet(myScenario, "burnP3Plus_OutputOptionFBPSpatial", optional = T, returnInvisible = T) %>% mutate(Variable = as.character(Variable))
 FireZoneTable <- datasheet(myScenario, "burnP3Plus_FireZone")
 WeatherZoneTable <- datasheet(myScenario, "burnP3Plus_WeatherZone")
 
@@ -136,21 +138,39 @@ if (isDatasheetEmpty(OutputOptions)) {
   saveDatasheet(myScenario, OutputOptions, "burnP3Plus_OutputOption")
 }
 
-if (isDatasheetEmpty(OutputOptionsSpatial)) {
-  updateRunLog("No spatial output options chosen. Defaulting to keeping all spatial outputs.", type = "info")
-  OutputOptionsSpatial[1, ] <- rep(TRUE, length(OutputOptionsSpatial[1, ]))
+if(isDatasheetEmpty(OutputOptionsSpatial)) {
+  updateRunLog("No spatial output options chosen. Defaulting to keeping all spatial outputs and final burn perimeters.", type = "info")
+  OutputOptionsSpatial[1,] <- rep(TRUE, length(OutputOptionsSpatial[1,]))
+  OutputOptionsSpatial$BurnPerimeter <- "Final"
   saveDatasheet(myScenario, OutputOptionsSpatial, "burnP3Plus_OutputOptionSpatial")
 } else if (any(is.na(OutputOptionsSpatial))) {
   updateRunLog("Missing one or more spatial output options. Defaulting to keeping unspecified spatial outputs.", type = "info")
   OutputOptionsSpatial <- OutputOptionsSpatial %>%
     replace(is.na(.), TRUE)
+  OutputOptionsSpatial$BurnPerimeter <- replace(OutputOptionsSpatial$BurnPerimeter, OutputOptionsSpatial$BurnPerimeter == TRUE, "Final")
   saveDatasheet(myScenario, OutputOptionsSpatial, "burnP3Plus_OutputOptionSpatial")
 }
 
-if (isDatasheetEmpty(OutputOptionsSpatialPrometheus)) {
-  updateRunLog("No Prometheus-specific spatial output options chosen. Defaulting to keeping no secondary spatial outputs.", type = "info")
-  OutputOptionsSpatialPrometheus[1, ] <- rep(FALSE, length(OutputOptionsSpatialPrometheus[1, ]))
-  saveDatasheet(myScenario, OutputOptionsSpatialPrometheus, "burnP3PlusPrometheus_OutputOptionSpatial")
+if (!isDatasheetEmpty(OutputOptionFBPSpatial)) {
+  # Fill missing values for all but Percentile outputs, which are left as NA to indicate non-use
+  OutputOptionFBPSpatial <- OutputOptionFBPSpatial %>%
+    mutate(across(
+      any_of(c("Average", "Minimum", "Maximum", "Median", "Individual")),
+      \(x) replace_na(x, FALSE)))
+  
+  saveDatasheet(myScenario, OutputOptionFBPSpatial, "burnP3Plus_OutputOptionFBPSpatial")
+
+  # Parse table to determine which outputs should be generated
+  outputComponentsToKeepDisplayName <- OutputOptionFBPSpatial %>%
+    dplyr::filter(any(Average, Minimum, Maximum, Median, Individual, as.logical(c(Percentile1, Percentile2, Percentile3)))) %>%
+    pull(Variable)
+
+  # Set a flag to decide whether or not to handle secondary outputs
+  keepSecondaries <- length(outputComponentsToKeepDisplayName) > 0
+} else {
+  # Set flags to not save FBP outputs
+  outputComponentsToKeepDisplayName <- character(0)
+  keepSecondaries <- FALSE
 }
 
 if(isDatasheetEmpty(BatchOption)) {
@@ -327,7 +347,7 @@ saveBurnMaps <- any(OutputOptionsSpatial$BurnMap, OutputOptionsSpatial$SeasonalB
                     OutputOptionsSpatial$BurnProbability, OutputOptionsSpatial$SeasonalBurnProbability,
                     OutputOptionsSpatial$RelativeBurnProbability, OutputOptionsSpatial$SeasonalRelativeBurnProbability,
                     OutputOptionsSpatial$BurnCount, OutputOptionsSpatial$SeasonalBurnCount,
-                    OutputOptionsSpatial$AllPerim)
+                    OutputOptionsSpatial$AllPerim, keepSecondaries)
 
 # Decide whether or not to save outputs seasonally
 saveSeasonalBurnMaps <- any(OutputOptionsSpatial$SeasonalBurnMap,
@@ -415,6 +435,39 @@ dir.create(seasonalAccumulatorOutputFolder, showWarnings = F)
 dir.create(secondaryOutputFolder, showWarnings = F)
 dir.create(allPerimOutputFolder, showWarnings = F)
 
+# Create path for geopackage for storing vector outputs
+# - Having a unique name for each job (if multiprocessed) helps organize things during merge
+geopackage_path <- 
+  str_c(
+    "burn-perimeters",
+    ifelse(runContext$isParallel, str_c("-", runContext$jobIndex), "")) %>%
+  str_c(".gpkg") %>%
+  file.path(shapeOutputFolder, .)
+
+# Note geopackage recommends `_` for word separation in table, feature, etc names
+geopackage_layer_name <-
+  str_c(
+    str_to_lower(OutputOptionsSpatial$BurnPerimeter),
+    "_burn_perimeters"
+  )
+
+# Create path for parquet files to hold tabular per-fire burn metrics
+allPerimTablePath <- 
+  str_c(
+    "all-perim-tabular",
+    ifelse(runContext$isParallel, str_c("-", runContext$jobIndex), "")) %>%
+  str_c(".parquet") %>%
+  file.path(allPerimOutputFolder, .)
+
+fbpTablePath <- 
+  str_c(
+    "fbp-tabular",
+    ifelse(runContext$isParallel, str_c("-", runContext$jobIndex), "")) %>%
+  str_c(".parquet") %>%
+  file.path(secondaryOutputFolder, .)
+
+tempTablePath <- "temp.parquet"
+
 ## Function Definitions ----
 
 ### Convenience and conversion functions ----
@@ -448,9 +501,28 @@ resetFolder <- function(path) {
   invisible()
 }
 
+# Get path of final burn grids
+# - pandora could produce no grids (if fires don't burn), a single grid, or daily grids
+getFinalRawOutputGridPaths <- function(gridOutputFolder, fileTags) {
+  # Build regex pattern for output grid file names (might include hour of burning or not)
+  file_pattern <- str_c(fileTags, "_burn\\d*.asc")
+
+  # List files matching pattern for each fire's file tag
+  map(file_pattern, list.files, path = gridOutputFolder, full.names = TRUE) %>%
+    # If not outputs are found, replace with NA to avoid silent dropping
+    map(~ if(length(.x) == 0) NA else .x) %>%
+    # Convert to a table with a column for file tag
+    map2_dfr(fileTags, ~tibble(file_tag = .y, filename = .x)) %>%
+    # Parse burn hour, if included in file name
+    mutate(burn_hour = str_extract(filename, "\\d+.asc") %>% str_extract("\\d+") %>% as.integer %>% replace_na(0)) %>%
+    # Keep only the grid file associated with the last burn hour (if multiple are present)
+    dplyr::filter(burn_hour == max(burn_hour), .by = file_tag) %>%
+    pull(filename)
+}
+
 # Get burn area from output asc
 getBurnArea <- function(inputFile) {
-  if (file.exists(inputFile)) {
+  if (!is.na(inputFile) && file.exists(inputFile)) {
   fread(inputFile, header = F, skip = 6, sep = " ") %>%
     as.matrix() %>%
     sum %>%
@@ -486,6 +558,50 @@ getResampleStatus <- function(burnSummary) {
     return()
 }
 
+# Function to consolidate raw tabular outputs per batch 
+consolidateTabularOutputs <- function() {
+  # Per-fire burn locations ----
+  # Check that there is data to consolidate
+  if(nrow(fread(str_c(allPerimTablePath, ".csv"), nrows = 3)) > 0) {
+    # Read in raw individual burn perimeter data from current batch and save to parquet
+    fread(str_c(allPerimTablePath, ".csv")) %>%
+      arrow::write_parquet(sink = tempTablePath)
+
+    # Combine with previous tabular data, if present
+    c(allPerimTablePath, tempTablePath) %>%
+      `[`(file.exists(.)) %>% # This drops the all perim parquet file if it does not exist yet
+      arrow::open_dataset() %>%
+      arrow::write_parquet(sink = allPerimTablePath)
+
+    # Reset CSV File
+    writeLines(
+      "Iteration,FireID,CellID",
+      str_c(allPerimTablePath, ".csv"))
+  }
+
+  # Per-fire FBP data ----
+  # Check that there is data to consolidate
+  if(nrow(fread(str_c(fbpTablePath, ".csv"), nrows = 3)) > 0) {
+    # Reshape outputs from the current batch into the temp table
+    fread(str_c(fbpTablePath, ".csv")) %>%
+      dcast(Iteration + FireID + CellID ~ Component, value.var = "Value") %>%
+      arrow::write_parquet(sink = tempTablePath)
+
+    # Combine with previous FBP outputs, if present
+    c(fbpTablePath, tempTablePath) %>%
+      `[`(file.exists(.)) %>% # This drops the fbp parquet file if it does not exist yet
+      arrow::open_dataset() %>%
+      arrow::write_parquet(sink = fbpTablePath)
+
+    # Reset CSV File
+    writeLines(
+      "Iteration,FireID,CellID,Component,Value",
+      str_c(fbpTablePath, ".csv"))
+  }
+
+  unlink(tempTablePath, force = T)
+}
+
 # Function to convert, accumulate, and clean up raw outputs
 processOutputs <- function(batchOutput, rawOutputGridPaths) {
   # Identify which unique fire ID's belong to each iteration
@@ -507,6 +623,8 @@ processOutputs <- function(batchOutput, rawOutputGridPaths) {
     generateBurnAccumulators(Iteration = ignitionsToExportTable$Iteration[i], UniqueFireIDs = ignitionsToExportTable$UniqueBatchFireIndices[[i]], burnGrids = rawOutputGridPaths, FireIDs = ignitionsToExportTable$FireIDs[[i]], Seasons = ignitionsToExportTable$Seasons[[i]])
     invisible(gc())
   }
+
+  consolidateTabularOutputs()
 }
 
 # Function to call Pandora on the (global) parameter file
@@ -528,6 +646,9 @@ runPandora <- function() {
   pandoraExe <- ssimEnvironment()$PackageDirectory %>%
     str_replace_all("\\\\", "/") %>%
     str_c("/pandora.exe")
+  
+  if (!file.exists(pandoraExe))
+    stop("Could not find the Pandora executable within the BP3+ Prometheus package folder. Please reinstall the package.")
   
   str_c("\"", pandoraExe, "\"", " /silent /nowin ", parameterFile) %>%
     shell()
@@ -564,7 +685,7 @@ runBatch <- function(batchInputs) {
   runPandora()
 
   # Get relative paths to all raw outputs
-  rawOutputGridPaths <- str_c(gridOutputFolder, "/", fileTags, "_burn.asc")
+  rawOutputGridPaths <- getFinalRawOutputGridPaths(gridOutputFolder, fileTags)
 
   # Get burn areas
   burnAreas <- getBurnAreas(rawOutputGridPaths)
@@ -647,7 +768,7 @@ generateWeatherFiles <- function(DeterministicBurnCondition){
 generateIgnitionFile <- function(Latitude, Longitude, UniqueBatchFireIndex, ...) {
   # Providing ignition location or a shapefile of points causes Pandora to simulate the fire with acceleration, which is not appropriate for these simulations
   # Instead, we provide a very small polygon that includes the centroid of the pixel to start the ignition in to simulate without acceleration
-  padding <- 3e-6
+  padding <- 6e-6
   x <- data.frame(
     lat = c(Latitude - padding, Latitude - padding, Latitude + padding, Latitude + padding),
     lon = c(Longitude - padding, Longitude + padding, Longitude + padding, Longitude - padding) 
@@ -658,7 +779,7 @@ generateIgnitionFile <- function(Latitude, Longitude, UniqueBatchFireIndex, ...)
     ) %>% # TODO: Does this need to be projected?
     st_combine() %>%
     sf::st_cast("POLYGON") %>%
-    st_write(file.path(ignitionFolder, str_c("Ignition", UniqueBatchFireIndex, ".shp")))
+    st_write(file.path(ignitionFolder, str_c("Ignition", UniqueBatchFireIndex, ".shp")), quiet = TRUE)
   invisible()
 }
 
@@ -715,6 +836,7 @@ generateParamaterTemplate <- function(placeHolderNames){
     str_c("Wx_file ", placeHolderNames$weatherFile),
     str_c("Init_hour 13"),
     str_c("FFMC_Method 5"),
+    str_c("Minimum_Size 0"),
     str_c("Out_GridType 0"),
     str_c("Threads ", numThreads),
     if (useWindGrid) {
@@ -734,12 +856,16 @@ generateParamaterTemplate <- function(placeHolderNames){
       NA
     },
     str_c("Duration  ", placeHolderNames$duration),
-    str_c("Export_Every ", placeHolderNames$duration)
+    if (OutputOptionsSpatial$BurnPerimeter == "Daily") {
+      str_c("Export_Every 24")
+    } else {
+      str_c("Export_Every ", placeHolderNames$duration)
+    }
   ) %>%
     discard(is.na)
 
   # Choose which outputs to save based on chosen output options
-  if (OutputOptionsSpatial$BurnPerimeter) {
+  if (OutputOptionsSpatial$BurnPerimeter != "No") {
     parameterFileTemplate <- parameterFileTemplate %>%
       c(str_c("Out_ShapeFiles ", file.path(shapeOutputFolder, placeHolderNames$fileTag), "_"))
   }
@@ -764,7 +890,7 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
   ignFile <- file.path(ignitionFolder, str_c("Ignition", UniqueBatchFireIndex, ".shp"))
 
   ignDate <- getSeasonMedianDate(season) %>%
-    lubridate::stamp("31/01/1999")() # dd/mm/yyyy is expected by Pandora
+    format("%d/%m/%Y") # dd/mm/yyyy is expected by Pandora
 
   greenupValue <-  GreenUp %>%
     dplyr::filter(Season %in% c(season, NA, "All")) %>%
@@ -819,56 +945,109 @@ generateParameterFile <- function(Iteration, FireID, UniqueBatchFireIndex, seaso
   return(fileTag)
 }
 
+# Function to convert per-fire spatial outputs into tabular data
+convertToTabular <- function(layer) {
+  layer %>%
+    # Convert to data frame of values
+    values(na.rm = F) %>%
+    as.data.frame() %>%
+    # Columns are named after the source file, rename to "Value"
+    dplyr::rename("Value" = 1) %>%
+    mutate("CellID" = row_number()) %>%
+    # Remove unburned pixels
+    dplyr::filter(Value > 0, !is.na(Value))
+}
+
 # Function to summarize individual burn grids by iteration
 generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireIDs, Seasons) {
   # For iteration zero (fires for resampling), only save individual burn maps and secondary outputs
   if(Iteration == 0) {
     for(i in seq_along(UniqueFireIDs)){
       if(!is.na(UniqueFireIDs[i])){
-        burnArea <- as.matrix(fread(burnGrids[UniqueFireIDs[i]], header = F, skip = 6, sep = " "))
+        if(!is.na(burnGrids[UniqueFireIDs[i]]) && file.exists(burnGrids[UniqueFireIDs[i]])) {
+          burnArea <- rast(burnGrids[UniqueFireIDs[i]])
+          burnArea %>%
+            convertToTabular() %>%
+            dplyr::mutate(
+              Iteration = Iteration,
+              FireID = FireIDs[i]) %>%
+            dplyr::select(Iteration, FireID, CellID) %>%
+            fwrite(
+              file = str_c(allPerimTablePath, ".csv"),
+              append = T,
+              col.names = F)
 
-        rast(fuelsRaster, vals = burnArea) %>% 
-          mask(fuelsRaster) %>%
-          writeRaster(str_c(allPerimOutputFolder, "/it", Iteration,"_fire_", FireIDs[i], ".tif"), 
-              overwrite = T,
-              NAflag = -9999,
-              wopt = list(filetype = "GTiff",
-                    datatype = "INT4S",
-                    gdal = c("COMPRESS=DEFLATE","ZLEVEL=9","PREDICTOR=2")))
+          # # TODO Tabular Per-Fire Outputs: Temporarily commenting out spatial per-fire outputs
+          # # - Consider adding logic for deciding when to keep spatial outputs as well
+          # burnArea <- as.matrix(fread(burnGrids[UniqueFireIDs[i]], header = F, skip = 6, sep = " "))
+          # rast(fuelsRaster, vals = burnArea) %>% 
+          #   mask(fuelsRaster) %>%
+          #   writeRaster(str_c(allPerimOutputFolder, "/it", Iteration,"_fire_", FireIDs[i], ".tif"), 
+          #       overwrite = T,
+          #       NAflag = -9999,
+          #       wopt = list(filetype = "GTiff",
+          #             datatype = "INT4S",
+          #             gdal = c("COMPRESS=DEFLATE","ZLEVEL=9","PREDICTOR=2")))
 
-        # Save requested secondary outputs
-        fileTag <- str_c("it", Iteration, ".fid", FireIDs[i])
-        for (component in outputComponentsToKeep) {
-          inputComponentFileName <- str_c(gridOutputFolder, "/", fileTag, "_", lookup(component, outputComponentNames, outputComponentCodes), ".asc")
-          if (file.exists(inputComponentFileName)) {
-            # Generate output file name
-            outputComponentFileName <- file.path(secondaryOutputFolder, basename(inputComponentFileName) %>% str_replace("asc", "tif"))
+          # Save requested secondary outputs
+          fileTag <- str_c("it", Iteration, ".fid", FireIDs[i])
+          if (keepSecondaries) {
+            # # TODO Tabular Per-Fire Outputs: Temporarily commenting out spatial per-fire outputs
+            # # - Consider adding logic for deciding when to keep spatial outputs as well
+            # # Set up mask for setting background to NA
+            # componentMask <- rast(fuelsRaster, vals = burnArea) %>% 
+            #   mask(fuelsRaster) %>%
+            #   classify(matrix(c(0, NA), ncol = 2))
 
-            # Rewrite as GeoTiff to output folder
-            rast(inputComponentFileName) %>%
-              {crs(.) <- crs(fuelsRaster); .} %>%
-              writeRaster(outputComponentFileName,
-                overwrite = T,
-                NAflag = -9999,
-                wopt = list(
-                  filetype = "GTiff",
-                  datatype = "FLT4S",
-                  gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
-                )
-              )
+            for (component in outputComponentsToKeep) {
+              inputComponentFileName <- str_c(gridOutputFolder, "/", fileTag, "_", lookup(component, outputComponentNames, outputComponentCodes), ".asc")
 
-            # Update corresponding table in SyncroSim
-            outputComponentTables[[component]] <<- rbind(
-              outputComponentTables[[component]],
-              data.frame(
-                Iteration = Iteration,
-                Timestep = FireIDs[i], # TODO: Separate out timestep and fire ID
-                FireID = FireIDs[i],
-                FileName = outputComponentFileName
-              )
-            )
+              if (file.exists(inputComponentFileName)) {
+                rast(inputComponentFileName) %>%
+                  convertToTabular() %>%
+                  dplyr::mutate(
+                    Iteration = Iteration,
+                    FireID = FireIDs[i],
+                    Component = component) %>%
+                  dplyr::select(Iteration, FireID, CellID, Component, Value) %>%
+                  fwrite(
+                    file = str_c(fbpTablePath, ".csv"),
+                    append = T,
+                    col.names = F)
+                # # TODO Tabular Per-Fire Outputs: Temporarily commenting out spatial per-fire outputs
+                # # - Consider adding logic for deciding when to keep spatial outputs as well
+                # # Generate output file name
+                # outputComponentFileName <- file.path(secondaryOutputFolder, basename(inputComponentFileName) %>% str_replace("asc", "tif"))
+
+                # # Rewrite as GeoTiff to output folder
+                # rast(inputComponentFileName) %>%
+                #   {crs(.) <- crs(fuelsRaster); .} %>%
+                #   mask(componentMask) %>%
+                #   {if (component == "SpreadDirection") (((pi/2 - .) * (180 / pi) + 360) %% 360) else .} %>% # Convert spread direction maps from radians ccw from x, to degrees cw from North. Note that 360 is added since some versions of terra miscalculate `%%` on negative numbers
+                #   writeRaster(outputComponentFileName,
+                #     overwrite = T,
+                #     NAflag = -9999,
+                #     wopt = list(
+                #       filetype = "GTiff",
+                #       datatype = "FLT4S",
+                #       gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
+                #     )
+                #   )
+
+                # # Update corresponding table in SyncroSim
+                # outputComponentTables[[component]] <<- rbind(
+                #   outputComponentTables[[component]],
+                #   data.frame(
+                #     Iteration = Iteration,
+                #     Timestep = FireIDs[i], # TODO: Separate out timestep and fire ID
+                #     FireID = FireIDs[i],
+                #     FileName = outputComponentFileName
+                #   )
+                # )
+              }
+              unlink(inputComponentFileName)
+            }
           }
-          unlink(inputComponentFileName)
         }
       }
     }
@@ -876,7 +1055,7 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
   }
 
   # initialize empty matrix for overall accumulator
-  accumulator <- matrix(0, nrow(fuelsRaster), ncol(fuelsRaster))
+  accumulator <- rast(fuelsRaster, vals = 0)
 
   # initialize a list of empty matrices for each season
   seasonValues <- SeasonTable %>%
@@ -892,63 +1071,99 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
   for(i in seq_along(UniqueFireIDs)){
     if(!is.na(UniqueFireIDs[i])){
       # Pandora occassionally doesn't produce an output. Possibly when there is truly no burn?
-      if(file.exists(burnGrids[UniqueFireIDs[i]])) {
+      if(!is.na(burnGrids[UniqueFireIDs[i]]) && file.exists(burnGrids[UniqueFireIDs[i]])) {
         # Read and add in the current burn map to the accumulator
-        burnArea <- as.matrix(fread(burnGrids[UniqueFireIDs[i]], header = F, skip = 6, sep = " "))
-        accumulator <- accumulator + burnArea
+        burnArea <- rast(burnGrids[UniqueFireIDs[i]])
+        accumulator <- sum(accumulator, burnArea, na.rm = T)
 
         # Add to seasonal accumulator
         if(saveSeasonalBurnMaps) {
           thisSeason <- Seasons[i]
           if (thisSeason %in% seasonValues)
-            seasonalAccumulators[[thisSeason]] <- seasonalAccumulators[[thisSeason]] + burnArea
+            seasonalAccumulators[[thisSeason]] <- sum(seasonalAccumulators[[thisSeason]], burnArea, na.rm = T)
         }
         
         # Save individual fire map if requested
         if(OutputOptionsSpatial$AllPerim == T){
-          rast(fuelsRaster, vals = burnArea) %>% 
-            mask(fuelsRaster) %>%
-              writeRaster(str_c(allPerimOutputFolder, "/it", Iteration,"_fire_", FireIDs[i], ".tif"), 
-                  overwrite = T,
-                  NAflag = -9999,
-                  wopt = list(filetype = "GTiff",
-                      datatype = "INT4S",
-                      gdal = c("COMPRESS=DEFLATE","ZLEVEL=9","PREDICTOR=2")))
+          burnArea %>%
+            convertToTabular() %>%
+            dplyr::mutate(
+              Iteration = Iteration,
+              FireID = FireIDs[i]) %>%
+            dplyr::select(Iteration, FireID, CellID) %>%
+            fwrite(
+              file = str_c(allPerimTablePath, ".csv"),
+              append = T,
+              col.names = F)
+          # # TODO Tabular Per-Fire Outputs: Temporarily commenting out spatial per-fire outputs
+          # # - Consider adding logic for deciding when to keep spatial outputs as well
+          # rast(fuelsRaster, vals = burnArea) %>% 
+          #   mask(fuelsRaster) %>%
+          #     writeRaster(str_c(allPerimOutputFolder, "/it", Iteration,"_fire_", FireIDs[i], ".tif"), 
+          #         overwrite = T,
+          #         NAflag = -9999,
+          #         wopt = list(filetype = "GTiff",
+          #             datatype = "INT4S",
+          #             gdal = c("COMPRESS=DEFLATE","ZLEVEL=9","PREDICTOR=2")))
         }
 
         # Save requested secondary outputs
         fileTag <- str_c("it", Iteration, ".fid", FireIDs[i])
-        for (component in outputComponentsToKeep) {
-          inputComponentFileName <- str_c(gridOutputFolder, "/", fileTag, "_", lookup(component, outputComponentNames, outputComponentCodes), ".asc")
-          if (file.exists(inputComponentFileName)) {
-            # Generate output file name
-            outputComponentFileName <- file.path(secondaryOutputFolder, basename(inputComponentFileName) %>% str_replace("asc", "tif"))
+        if (keepSecondaries) {
+          # # TODO Tabular Per-Fire Outputs: Temporarily commenting out spatial per-fire outputs
+          # # - Consider adding logic for deciding when to keep spatial outputs as well
+          # # Set up mask for setting background to NA
+          # componentMask <- rast(fuelsRaster, vals = burnArea) %>% 
+          #   mask(fuelsRaster) %>%
+          #   classify(matrix(c(0, NA), ncol = 2))
 
-            # Rewrite as GeoTiff to output folder
-            rast(inputComponentFileName) %>%
-              {crs(.) <- crs(fuelsRaster); .} %>%
-              writeRaster(outputComponentFileName,
-                overwrite = T,
-                NAflag = -9999,
-                wopt = list(
-                  filetype = "GTiff",
-                  datatype = "FLT4S",
-                  gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
-                )
-              )
+          for (component in outputComponentsToKeep) {
+            inputComponentFileName <- str_c(gridOutputFolder, "/", fileTag, "_", lookup(component, outputComponentNames, outputComponentCodes), ".asc")
+            if (file.exists(inputComponentFileName)) {
+              rast(inputComponentFileName) %>%
+                convertToTabular() %>%
+                dplyr::mutate(
+                  Iteration = Iteration,
+                  FireID = FireIDs[i],
+                  Component = component) %>%
+                dplyr::select(Iteration, FireID, CellID, Component, Value) %>%
+                fwrite(
+                  file = str_c(fbpTablePath, ".csv"),
+                  append = T,
+                  col.names = F)
+              # # TODO Tabular Per-Fire Outputs: Temporarily commenting out spatial per-fire outputs
+              # # - Consider adding logic for deciding when to keep spatial outputs as well
+              # # Generate output file name
+              # outputComponentFileName <- file.path(secondaryOutputFolder, basename(inputComponentFileName) %>% str_replace("asc", "tif"))
 
-            # Update corresponding table in SyncroSim
-            outputComponentTables[[component]] <<- rbind(
-              outputComponentTables[[component]],
-              data.frame(
-                Iteration = Iteration,
-                Timestep = FireIDs[i], # TODO: Separate out timestep and fire ID
-                FireID = FireIDs[i],
-                FileName = outputComponentFileName
-              )
-            )
+              # # Rewrite as GeoTiff to output folder
+              # rast(inputComponentFileName) %>%
+              #   {crs(.) <- crs(fuelsRaster); .} %>%
+              #   mask(componentMask) %>%
+              #   {if (component == "SpreadDirection") (((pi/2 - .) * (180 / pi) + 360) %% 360) else .} %>% # Convert spread direction maps from radians ccw from x, to degrees cw from North. Note that 360 is added since some versions of terra miscalculate `%%` on negative numbers
+              #   writeRaster(outputComponentFileName,
+              #     overwrite = T,
+              #     NAflag = -9999,
+              #     wopt = list(
+              #       filetype = "GTiff",
+              #       datatype = "FLT4S",
+              #       gdal = c("COMPRESS=DEFLATE", "ZLEVEL=9", "PREDICTOR=2")
+              #     )
+              #   )
+
+              # # Update corresponding table in SyncroSim
+              # outputComponentTables[[component]] <<- rbind(
+              #   outputComponentTables[[component]],
+              #   data.frame(
+              #     Iteration = Iteration,
+              #     Timestep = FireIDs[i], # TODO: Separate out timestep and fire ID
+              #     FireID = FireIDs[i],
+              #     FileName = outputComponentFileName
+              #   )
+              # )
+            }
+            unlink(inputComponentFileName)
           }
-          unlink(inputComponentFileName)
         }
       }
     }
@@ -958,7 +1173,7 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
   accumulator[accumulator != 0] <- 1
 
   # Mask and save as raster
-  rast(fuelsRaster, vals = accumulator) %>%
+  accumulator %>%
     mask(fuelsRaster) %>%
     writeRaster(str_c(accumulatorOutputFolder, "/it", Iteration, ".tif"), 
                 overwrite = T,
@@ -974,7 +1189,7 @@ generateBurnAccumulators <- function(Iteration, UniqueFireIDs, burnGrids, FireID
       seasonalAccumulators[[season]][seasonalAccumulators[[season]] != 0] <- 1
 
       # Mask and save as raster
-      rast(fuelsRaster, vals = seasonalAccumulators[[season]]) %>%
+      seasonalAccumulators[[season]] %>%
         mask(fuelsRaster) %>%
         writeRaster(str_c(seasonalAccumulatorOutputFolder, "/it", Iteration, "-sn", lookup(season, SeasonTable$Name, SeasonTable$SeasonId), ".tif"), 
                     overwrite = T,
@@ -998,6 +1213,12 @@ crs(fuelsRaster) %>%
 
 # Reformat fuel lookup table
 FuelType %>%
+  bind_rows(
+    # Insert a non-fuel record to start of lookup
+    # - workaround for curing parsing issue in Pandora
+    tibble(ID = -1, Color = "0,0,0,0", Name = "Non-fuel", Code = "Non-fuel"),
+    .
+  ) %>%
   transmute(
     grid_value = ID,
     export_value = ID,
@@ -1042,11 +1263,8 @@ if (useWindGrid) {
 }
 
 # Decide which burn components to keep
-# - Parse table
-outputComponentsToKeep <- OutputOptionsSpatialPrometheus %>%
-  pivot_longer(-starts_with(c("Scenario", "Project", "Parent")), names_to = "component", values_to = "keep") %>%
-  filter(keep) %>%
-  pull(component)
+outputComponentsToKeep <- outputComponentsToKeepDisplayName %>%
+  lookup(FBPVariableTable$DisplayName, FBPVariableTable$Name)
 
 # - Translate to input keywords as expected by Pandora, prepend burn map keyword
 outputComponents <- outputComponentsToKeep %>%
@@ -1054,11 +1272,26 @@ outputComponents <- outputComponentsToKeep %>%
   str_c(collapse = " ") %>%
   str_c("burn ", .)
 
-# - Initialize list of tables to hold outputs
-outputComponentTables <- list()
-for (component in outputComponentsToKeep) {
-  outputComponentTables[[component]] <- data.frame()
-}
+# # TODO Tabular Per-Fire Outputs: Temporarily commenting out spatial per-fire outputs
+# # - Consider adding logic for deciding when to keep spatial outputs as well
+# # - Initialize list of tables to hold outputs
+# outputComponentTables <- list()
+# for (component in outputComponentsToKeep) {
+#   outputComponentTables[[component]] <- data.frame()
+# }
+
+## Initialize temporary CSV files to track per-fire outputs as they are generated ----
+writeLines(
+  "Iteration,FireID,CellID",
+  str_c(allPerimTablePath, ".csv")
+)
+
+writeLines(
+  "Iteration,FireID,CellID,Component,Value",
+  str_c(fbpTablePath, ".csv")
+)
+  
+
 
 # Generate empty parameter file template for single fire
 parameterFileTemplate <- generateParamaterTemplate(parameterFilePlaceHolders)
@@ -1251,37 +1484,93 @@ if (saveBurnMaps) {
 
   # Output secondary outputs if present
   if (length(outputComponentsToKeep) > 0) {
-    for (i in seq_along(outputComponentTables)) {
-      if (nrow(outputComponentTables[[i]]) > 0) {
-        saveDatasheet(myScenario, outputComponentTables[[i]], str_c("burnP3PlusPrometheus_Output", outputComponentsToKeep[i], "Map"))
-      }
-    }
+    OutputFBPTabular <- data.frame(
+      FileName = fbpTablePath %>% normalizePath(mustWork = F),
+      Description =
+        str_c(
+          "Tabular FBP outputs", 
+          ifelse(runContext$isParallel, str_c(" - Job ", runContext$jobIndex), "")))
+    
+    if(file.exists(fbpTablePath))
+      saveDatasheet(myScenario, OutputFBPTabular, str_c("burnP3Plus_OutputFBPTabular"))
+    # # TODO Tabular Per-Fire Outputs: Temporarily commenting out spatial per-fire outputs
+    # # - Consider adding logic for deciding when to keep spatial outputs as well
+    # for (i in seq_along(outputComponentTables)) {
+    #   if (!isDatasheetEmpty(outputComponentTables[[i]])) {
+    #     saveDatasheet(myScenario, outputComponentTables[[i]], str_c("burnP3Plus_Output", outputComponentsToKeep[i], "Map"))
+    #   }
+    # }
   }
 
   updateRunLog("Finished collecting burn maps in ", updateBreakpoint())
 }
 
 ## Burn perimeters ----
-if (OutputOptionsSpatial$BurnPerimeter) {
+if (OutputOptionsSpatial$BurnPerimeter != "No") {
   progressBar(type = "message", message = "Saving burn perimeters...")
-  OutputBurnPerimeter <-
-    tibble(
-      FileName = list.files(shapeOutputFolder, pattern = "*.shp", full.names = T),
-      Tag = str_extract(FileName, "it\\d+\\.fid\\d+"),
-      Iteration = str_extract(Tag, "it\\d+") %>% str_sub(3) %>% as.integer(),
-      FireID = str_extract(Tag, "fid\\d+") %>% str_sub(4) %>% as.integer(),
-      Timestep = 0
-    ) %>%
-    filter(Iteration %in% iterations | (Iteration == 0 & FireID %in% extraIgnitionIDs)) %>%
-    dplyr::select(-Tag) %>%
-    as.data.frame()
 
-  # Identify missing shapefiles
-  missing_shapefiles <- anti_join(OutputFireStatistic, OutputBurnPerimeter, by = c("Iteration", "FireID")) %>%
-    dplyr::select(Iteration, FireID) %>%
+  shapefiles <- list.files(shapeOutputFolder, pattern = "*.shp", full.names = T) %>%
+    enframe(name = NULL, value = "path") %>%
     mutate(
-      Timestep = 0,
-      FileName = str_c(shapeOutputFolder, "/it", Iteration, ".fid", FireID, ".shp"))
+      tag = str_extract(path, "it\\d+\\.fid\\d+"),
+      iteration = str_extract(tag, "it\\d+") %>% str_sub(3) %>% as.integer(),
+      fire_id = str_extract(tag, "fid\\d+") %>% str_sub(4) %>% as.integer(),
+      burn_day = str_extract(path, "_\\d+.shp") %>% str_extract("\\d+") %>% as.numeric() %>% `/`(24) %>% ceiling %>% as.integer) %>%
+      dplyr::select(-tag) %>%
+      arrange(iteration, fire_id, burn_day)
+
+  shapefiles_present <- shapefiles %>%
+    dplyr::select(Iteration = iteration, FireID = fire_id, BurnDay = burn_day)
+
+  if(!isDatasheetEmpty(shapefiles)) {
+    for (i in seq(nrow(shapefiles))) {
+      perimeter <- st_read(shapefiles$path[i], quiet = TRUE) %>%
+        mutate(
+          Iteration = shapefiles$iteration[i],
+          FireID = shapefiles$fire_id[i],
+          BurnDay = shapefiles$burn_day[i],
+          geometry = geometry,
+          .keep = "none") %>%
+        st_buffer(0) %>% # Prevent specific invalidity case that st_make_valid doesn't catch
+        st_make_valid() %>%
+        # Remove burn day info if not saving daily perimeters
+        {if (OutputOptionsSpatial$BurnPerimeter != "Daily") dplyr::select(., -BurnDay) else .}
+
+      # For daily burn perimeters, we also need to track and subtract the previous day's burn
+      if (OutputOptionsSpatial$BurnPerimeter == "Daily") {
+        if (perimeter$BurnDay == 1) {
+          burn_yesterday <- perimeter
+        } else {
+          # Calculate difference
+          st_agr(perimeter) = "constant"
+          burn_today <- perimeter %>%
+            st_difference(st_geometry(burn_yesterday))
+
+          # Update placeholders
+          burn_yesterday <- perimeter
+          perimeter <- burn_today
+        }
+      }
+
+      # Save perimeter to geopackage
+      perimeter %>%
+        st_cast("MULTIPOLYGON") %>%
+        st_write(
+          dsn = geopackage_path,
+          layer = geopackage_layer_name,
+          quiet = TRUE,
+          append = TRUE)
+    }
+  }
+
+  # Identify shapefile requested
+  required_shapefiles <- DeterministicBurnCondition %>%
+    dplyr::select(Iteration, FireID, BurnDay) %>%
+    # Only require final burn day if not saving daily perimeters
+    {if(OutputOptionsSpatial$BurnPerimeter != "Daily") dplyr::filter(., BurnDay == max(BurnDay), .by = c("Iteration", "FireID")) else .}
+  
+  # Identify missing shapefiles
+  missing_shapefiles <- anti_join(required_shapefiles, shapefiles_present, by = c("Iteration", "FireID", "BurnDay"))
   
   # Create an empty geometry with the right metadata to fill missing shapefiles
   empty_geom <- fuelsRaster %>%
@@ -1289,22 +1578,42 @@ if (OutputOptionsSpatial$BurnPerimeter) {
     as.polygons() %>%
     erase(.,.) %>%
     st_as_sf() %>%
-    st_set_crs(crs(fuelsRaster))
+    st_set_crs(crs(fuelsRaster)) %>%
+    st_cast("MULTIPOLYGON")
 
   # Create empty geometries
-  missing_shapefiles$FileName %>%
-    walk(st_write, obj = empty_geom, delete_layer = T)
+  missing_shapefiles %>%
+    pwalk(
+      function(Iteration, FireID, BurnDay) {
+        empty_geom %>%
+          mutate(
+            Iteration = Iteration,
+            FireID = FireID,
+            BurnDay = BurnDay,
+            geometry = geometry,
+            .keep = "none"
+            ) %>%
+          {if (OutputOptionsSpatial$BurnPerimeter != "Daily") dplyr::select(., -BurnDay) else .} %>%
+          st_write(
+            dsn = geopackage_path,
+            layer = geopackage_layer_name,
+            quiet = TRUE,
+            append = TRUE)
+      })
 
-  # Append output table records for missing shapefiles and sort
-  OutputBurnPerimeter <-
-    bind_rows(OutputBurnPerimeter, missing_shapefiles) %>%
-    arrange(Iteration, FireID) %>%
+  OutputFirePerimeter <-
+    tibble(
+      FileName = geopackage_path %>% normalizePath(),
+      Description = 
+        str_c(
+          OutputOptionsSpatial$BurnPerimeter,
+          " burn perimeters", 
+          ifelse(runContext$isParallel, str_c(" - Job ", runContext$jobIndex), ""))
+    ) %>%
     as.data.frame()
 
-  # Output if there are records to save
-  if (!isDatasheetEmpty(OutputBurnPerimeter)) {
-    saveDatasheet(myScenario, OutputBurnPerimeter, "burnP3Plus_OutputFirePerimeter", append = T)
-  }
+  if (!isDatasheetEmpty(OutputFirePerimeter))
+    saveDatasheet(myScenario, OutputFirePerimeter, "burnP3Plus_OutputFirePerimeter")
 
   updateRunLog("Finished collecting burn perimeters in ", updateBreakpoint())
 }
@@ -1313,21 +1622,34 @@ if (OutputOptionsSpatial$BurnPerimeter) {
 if (OutputOptionsSpatial$AllPerim | (saveBurnMaps & minimumFireSize > 0)) {
   progressBar(type = "message", message = "Saving individual burn maps...")
 
-  # Build table of burn maps and save to SyncroSim
-  OutputAllPerim <-
-    tibble(
-      FileName = list.files(allPerimOutputFolder, pattern = "*.tif", full.names = T),
-      Iteration = str_extract(FileName, "\\d+_fire") %>% str_sub(end = -6) %>% as.integer(),
-      FireID = str_extract(FileName, "\\d+.tif") %>% str_sub(end = -5) %>% as.integer(),
-      Timestep = FireID
-    ) %>%
-    filter(Iteration %in% iterations | (Iteration == 0 & FireID %in% extraIgnitionIDs)) %>%
-    as.data.frame()
+  OutputAllPerimTabular <- data.frame(
+    FileName = allPerimTablePath %>% normalizePath(mustWork = F),
+    Description =
+      str_c(
+        "Tabular burn outputs per fire", 
+        ifelse(runContext$isParallel, str_c(" - Job ", runContext$jobIndex), "")))
+  
+  if(file.exists(allPerimTablePath))
+    saveDatasheet(myScenario, OutputAllPerimTabular, str_c("burnP3Plus_OutputAllPerimTabular"))
 
-  # Output if there are records to save
-  if (!isDatasheetEmpty(OutputAllPerim)) {
-    saveDatasheet(myScenario, OutputAllPerim, "burnP3Plus_OutputAllPerim", append = T)
-  }
+  # # TODO Tabular Per-Fire Outputs: Temporarily commenting out spatial per-fire outputs
+  # # - Consider adding logic for deciding when to keep spatial outputs as well
+  # # Build table of burn maps and save to SyncroSim
+  # # Build table of burn maps and save to SyncroSim
+  # OutputAllPerim <-
+  #   tibble(
+  #     FileName = list.files(allPerimOutputFolder, pattern = "*.tif", full.names = T),
+  #     Iteration = str_extract(FileName, "\\d+_fire") %>% str_sub(end = -6) %>% as.integer(),
+  #     FireID = str_extract(FileName, "\\d+.tif") %>% str_sub(end = -5) %>% as.integer(),
+  #     Timestep = FireID
+  #   ) %>%
+  #   filter(Iteration %in% iterations | (Iteration == 0 & FireID %in% extraIgnitionIDs)) %>%
+  #   as.data.frame()
+
+  # # Output if there are records to save
+  # if (!isDatasheetEmpty(OutputAllPerim)) {
+  #   saveDatasheet(myScenario, OutputAllPerim, "burnP3Plus_OutputAllPerim", append = T)
+  # }
 
   updateRunLog("Finished individual burn maps in ", updateBreakpoint())
 }
