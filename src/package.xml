@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.4.2" url="https://github.com/burnp3/burnp3plusprometheus">
+<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.4.3" url="https://github.com/burnp3/burnp3plusprometheus">
 
 	<builtFor package = "burnP3Plus" version = "2.5.3"/>
 

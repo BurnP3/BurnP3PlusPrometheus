@@ -466,7 +466,8 @@ fbpTablePath <-
   str_c(".parquet") %>%
   file.path(secondaryOutputFolder, .)
 
-tempTablePath <- "temp.parquet"
+tempTablePath <- "temp.parquet" %>%
+  file.path(tempDir, .)
 
 ## Function Definitions ----
 
