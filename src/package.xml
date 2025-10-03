@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.4.3" url="https://github.com/burnp3/burnp3plusprometheus">
+<package name="burnP3PlusPrometheus" displayName= "BurnP3+ Prometheus" description= "Prometheus fire growth model for BurnP3+" version="2.5.0" url="https://github.com/burnp3/burnp3plusprometheus">
 
-	<builtFor package = "burnP3Plus" version = "2.5.3"/>
+	<builtFor package = "burnP3Plus" version = "2.6.0"/>
 
 	<!--Project Datasheets-->
 
@@ -171,7 +171,6 @@
 			<dataSheet name="burnP3Plus_OutputOption" type="Input"/>
 			<dataSheet name="burnP3Plus_OutputOptionSpatial" type="Input"/>
 			<dataSheet name="burnP3Plus_OutputOptionFBPSpatial" type="Input"/>
-			<dataSheet name="burnP3Plus_DeterministicIgnitionCount" type="Input"/>
 			<dataSheet name="burnP3Plus_DeterministicIgnitionLocation" type="Input"/>
 			<dataSheet name="burnP3Plus_DeterministicBurnCondition" type="Input"/>
 			<dataSheet name="burnP3Plus_WindGrid" type="Input"/>
@@ -179,18 +178,8 @@
 			<dataSheet name="burnP3Plus_Curing" type="Both"/>
 			<!-- <dataSheet name="burnP3Plus_FuelLoad" type="Both"/> -->
 			<dataSheet name="burnP3Plus_OutputFireStatistic" type="Output"/>
-			<dataSheet name="burnP3Plus_OutputBurnMap" type="Output"/>
 			<dataSheet name="burnP3Plus_OutputFirePerimeter" type="Output"/>
-			<dataSheet name="burnP3Plus_OutputAllPerim" type="Output"/>
-		  <dataSheet name="burnP3Plus_OutputAllPerimTabular" type="Both"/>
-		  <dataSheet name="burnP3Plus_OutputFBPTabular" type="Both"/>
-			<dataSheet name="burnP3Plus_OutputRateOfSpreadMap" type="Output"/>
-			<dataSheet name="burnP3Plus_OutputFireIntensityMap" type="Output"/>
-			<dataSheet name="burnP3Plus_OutputSpreadDirectionMap" type="Output"/>
-			<dataSheet name="burnP3Plus_OutputSurfaceFuelConsumptionMap" type="Output"/>
-			<dataSheet name="burnP3Plus_OutputCrownFractionBurnedMap" type="Output"/>
-			<dataSheet name="burnP3Plus_OutputCrownFractionConsumedMap" type="Output"/>
-			<dataSheet name="burnP3Plus_OutputTotalFuelConsumptionMap" type="Output"/>
+		  <dataSheet name="burnP3Plus_OutputRawTabular" type="Both"/>
 	</transformer>
 
 	<!--Layouts-->
