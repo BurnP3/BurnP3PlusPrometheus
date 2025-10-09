@@ -28,8 +28,8 @@ if (!file.exists(prometheusLocation)) {
 
 prometheusVersion <- str_c('powershell "(Get-Item -path ', prometheusLocation, ').VersionInfo.ProductVersion"') %>%
   shell(intern = T)
-if (prometheusVersion != "6,2023,06,01") {
-  stop("Could not find the correct version of Prometheus. Please ensure that you have installed Prometheus v2023.06.01.")
+if (prometheusVersion != "6,2021,12,03") {
+  stop("Could not find the correct version of Prometheus. Please ensure that you have installed Prometheus v2021.12.03.")
 }
 
 # Find the proj lib directory for prometheus
