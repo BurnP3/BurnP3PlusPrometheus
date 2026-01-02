@@ -250,10 +250,9 @@ processOutputs <- function(batchOutputs, rawOutputGridPaths) {
   # Save raw batch outputs to temp dataset
   if(!isDatasheetEmpty(batchTabularData))
     arrow::write_dataset(
-      dataset = batchTabularData,
+      dataset = batchTabularData %>% group_by(BatchID),
       path = rawTableTempPath,
-      format = "arrow",
-      partitioning = "BatchID",
+      format = "parquet",
       existing_data_behavior = "delete_matching")
 }
 
