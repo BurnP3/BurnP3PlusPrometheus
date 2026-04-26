@@ -329,6 +329,8 @@ runBatch <- function(batchInputs) {
   progressBar("step")
   progressBar(type = "message", message = "Growing fires...")
   
+  gc()
+
   # Return relevant outputs
   batchOutputs %>%
     select(-BatchID, -UniqueFireID, -Season) %>%
