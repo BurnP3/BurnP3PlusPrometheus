@@ -227,6 +227,10 @@ processOutputsPerFire <- function(BatchID, Iteration, FireID, UniqueFireID, burn
     # - Note that with data.table syntax this does not need to be assigned back to burnData
     if (file.exists(inputComponentFileName)) {
       burnData[, (component) := extractTabularData(inputComponentFileName, CellID)]
+
+      if (component == "SpreadDirection"){
+        burnData[, SpreadDirection := round(SpreadDirection * 180 / pi)] 
+      }
     }
   }
 
